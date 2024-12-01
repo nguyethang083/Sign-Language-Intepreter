@@ -27,7 +27,7 @@
     "**/*.ts",
     "**/*.tsx",
     ".next/types/**/*.ts",
-    "src/app/component/eyetracking/EyeTracking.jsx"
+    "src/app/helpers/ConvertAudioToText.js"
   ],
   "exclude": ["node_modules"]
 }

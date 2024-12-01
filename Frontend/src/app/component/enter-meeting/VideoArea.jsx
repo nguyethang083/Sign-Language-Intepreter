@@ -1,31 +1,33 @@
 import React, { Component, createRef } from "react";
-import { ZegoExpressEngine } from "zego-express-engine-webrtc";
+import {
+  createZegoEngine,
+  loginToRoom,
+  createStream,
+} from "@/app/helpers/zegoEngineManager";
+
+import {
+  processAudioData,
+  initializeWebSocket,
+} from "@/app/helpers/audioProcessor";
+import LocalVideoComponent from "@/app/component/videocall/LocalVideoComponent";
+import RemoteVideoComponent from "@/app/component/videocall/RemoteVideoComponent";
 
 class VideoArea extends Component {
   constructor(props) {
     super(props);
-    this.state = {
-      zg: null,
-    };
+    this.state = { zg: null };
     this.remoteVideoRef = createRef();
   }
 
-  componentDidMount() {
-    // Tạo ZegoExpressEngine khi component được mount
-    this.createZegoExpressEngineOption();
-  }
-
-  async createZegoExpressEngineOption() {
+  async componentDidMount() {
     const { generateToken04 } = require("@/app/helpers/zegoServerAssistant");
-
-    const appID = 280263608; // App ID của bạn
-    const server = "1175c6e2e8bec41076e917a9a01a5627"; // Server URL của bạn
-    const userID = "user-" + Math.floor(Math.random() * 10000); // Tạo user ID ngẫu nhiên
-    const effectiveTimeInSeconds = 3600;
-    const payload = "";
-
+    const appID = 280263608;
+    const server = "1175c6e2e8bec41076e917a9a01a5627";
+    const userID = "user-" + Math.floor(Math.random() * 10000);
     const roomID = "room-1";
     const userName = "ducanh";
+    const effectiveTimeInSeconds = 3600;
+    const payload = "";
     const token = await generateToken04(
       appID,
       userID,
@@ -34,129 +36,98 @@ class VideoArea extends Component {
       payload
     );
 
-    const zg = new ZegoExpressEngine(appID, server);
+    const zg = createZegoEngine(appID, server, {
+      logLevel: "disable",
+      remoteLogLevel: "disable",
+    });
     this.setState({ zg }, async () => {
-      // Lắng nghe sự kiện và đăng nhập vào phòng
-      this.initEvent();
-      await this.loginToRoom(roomID, token, userID, userName);
+      zg.on("roomStreamUpdate", this.handleStreamUpdate);
+      await loginToRoom(zg, roomID, token, userID, userName);
+      const localStream = await createStream(zg);
+      document.querySelector("#local-video").srcObject = localStream;
+      zg.startPublishingStream(`video_${userID}`, localStream);
     });
   }
 
-  async loginToRoom(roomID, token, userID, userName) {
-    // Đăng nhập vào phòng
-    const result = await this.state.zg.loginRoom(
-      roomID,
-      token,
-      { userID, userName },
-      { userUpdate: true }
-    );
+  handleStreamUpdate = async (roomID, updateType, streamList) => {
+    if (updateType === "ADD" && streamList.length > 0) {
+      const remoteStream = await this.state.zg.startPlayingStream(
+        streamList[0].streamID
+      );
+      if (this.remoteVideoRef.current) {
+        this.remoteVideoRef.current.srcObject = remoteStream;
+        this.remoteVideoRef.current.muted = false;
 
-    // Tạo stream với cả video và audio
-    const localStream = await this.state.zg.createStream({
-      camera: {
-        audio: true, // Bật mic
-        video: true, // Bật camera
-      },
-    });
+        try {
+          await initializeWebSocket();
 
-    // Gắn stream vào video local
-    const localVideo = document.querySelector("#local-video");
-    if (localVideo) {
-      localVideo.srcObject = localStream;
-    }
+          const audioContext = new (window.AudioContext ||
+            window.webkitAudioContext)({
+            sampleRate: 16000,
+          });
 
-    // Publish stream
-    const streamID = `video_${userID}`;
-    this.state.zg.startPublishingStream(streamID, localStream);
-  }
+          const BUFFER_SIZE = 8192;
 
-  initEvent() {
-    // Lắng nghe sự kiện cập nhật stream trong phòng
-    this.state.zg.on(
-      "roomStreamUpdate",
-      async (roomID, updateType, streamList) => {
-        console.log("Stream update:", roomID, updateType, streamList);
-
-        if (updateType === "ADD") {
-          // Nếu có luồng mới, bắt đầu phát luồng đó
-          const remoteStream = await this.state.zg.startPlayingStream(
-            streamList[0].streamID
+          const source = audioContext.createMediaStreamSource(remoteStream);
+          const processor = audioContext.createScriptProcessor(
+            BUFFER_SIZE,
+            1,
+            1
           );
 
-          // Gắn luồng remote vào video và bật audio
-          if (this.remoteVideoRef.current) {
-            this.remoteVideoRef.current.srcObject = remoteStream;
-            this.remoteVideoRef.current.muted = false; // Đảm bảo bật âm thanh từ stream
-          }
+          let lastProcessingTime = 0;
+          const PROCESS_INTERVAL = 100;
 
-          // Create an AudioContext
-          const audioContext = new (window.AudioContext ||
-            window.webkitAudioContext)();
-          const source = audioContext.createMediaStreamSource(remoteStream);
+          processor.onaudioprocess = async (event) => {
+            const currentTime = Date.now();
+            if (currentTime - lastProcessingTime < PROCESS_INTERVAL) {
+              return;
+            }
 
-          // Create a processor node
-          const processor = audioContext.createScriptProcessor(4096, 1, 1);
-          processor.onaudioprocess = (event) => {
-            const audioData = event.inputBuffer.getChannelData(0);
-            // Send audioData to your speech-to-text model
-            this.processAudioData(audioData);
+            try {
+              const text = await processAudioData(
+                event.inputBuffer.getChannelData(0)
+              );
+              if (text) {
+                const subtitleElement = document.querySelector("#subtitle");
+                if (subtitleElement) {
+                  subtitleElement.textContent = text;
+                }
+              }
+            } catch (error) {
+              console.error("Error processing audio:", error);
+            }
+
+            lastProcessingTime = currentTime;
           };
 
-          // Connect the audio stream to the processor
           source.connect(processor);
           processor.connect(audioContext.destination);
-        } else if (updateType === "DELETE") {
-          // Nếu luồng bị xóa, xóa liên kết đến video
-          if (this.remoteVideoRef.current) {
-            this.remoteVideoRef.current.srcObject = null;
-          }
+        } catch (error) {
+          console.error("Error initializing WebSocket:", error);
         }
       }
-    );
-  }
-
-  processAudioData(audioData) {
-    if (audioData) {
-      // Xử lý dữ liệu âm thanh ở đây
-      console.log("Audio data:", audioData);
     }
-  }
+  };
 
   render() {
     return (
-      <div className="flex-grow flex items-center justify-between relative">
-        {/* Video local */}
-        <video
-          id="local-video"
-          style={{ width: "70%", height: "auto" }}
-          autoPlay
-          playsInline
-          muted
-        ></video>
-
-        {/* Video remote */}
+      <div className="flex-grow flex items-center justify-between">
+        <LocalVideoComponent />
         <div className="participant-videos flex flex-wrap justify-center mt-4">
-          <div
-            className="participant-video"
-            style={{
-              width: "300px",
-              height: "200px",
-              margin: "10px",
-              backgroundColor: "#000",
-              borderRadius: "8px",
-              overflow: "hidden",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            <video
-              id="remote-video"
-              ref={this.remoteVideoRef}
-              autoPlay
-              playsInline
-            ></video>
-          </div>
+          <RemoteVideoComponent ref={this.remoteVideoRef} />
+        </div>
+        <div
+          id="subtitle"
+          style={{
+            position: "absolute",
+            color: "white",
+            fontSize: 20,
+            bottom: 80,
+            left: 400,
+          }}
+        >
+          This is a subtitle text
         </div>
       </div>
     );

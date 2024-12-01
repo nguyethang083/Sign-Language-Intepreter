@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
-import EyeTracking from "./component/eyetracking/EyeTracking";
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -30,8 +29,7 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         {children}
-        {/* <EyeTracking /> */}
-        <script src="https://webgazer.cs.brown.edu/webgazer.js?"></script>
+        <script src="./helpers/ConvertAudioToText.js"></script>
       </body>
     </html>
   );

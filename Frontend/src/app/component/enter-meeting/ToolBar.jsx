@@ -1,4 +1,3 @@
-import EyeTrackingComponent from "@/app/component/eyetracking/EyeTracking";
 import Link from "next/link";
 import { useState, useEffect } from "react";
 
@@ -42,7 +41,7 @@ const ToolBar = () => {
     <>
       {/* Chat Sidebar */}
       {isChatOpen && (
-        <div className="absolute right-0 top-0 bottom-0 w-80 bg-gray-800 border-l border-gray-700 flex flex-col">
+        <div className="absolute top-0 right-0 bottom-0 w-80 bg-gray-800 border-l border-gray-700 flex flex-col">
           <div className="p-4 border-b border-gray-700 flex justify-between items-center">
             <h2 className="text-lg font-semibold">Chat</h2>
             <button
@@ -167,7 +166,6 @@ const ToolBar = () => {
           >
             <div className="text-[20px]">{isEyeTracking ? "😐" : "😑"}</div>
             <div>Eye tracking</div>
-            {isEyeTracking && <EyeTrackingComponent />}
           </button>
         </div>
 
