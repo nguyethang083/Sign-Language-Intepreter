@@ -72,11 +72,23 @@ var run = function () { return __awaiter(void 0, void 0, void 0, function () {
                     console.error("AssemblyAI Error:", error);
                     isAssemblyAIReady = false;
                 });
-                transcriber.on("transcript.final", function (data) {
-                    console.log("Received transcript:", data);
+                transcriber.on("transcript", function (data) {
                     wss.clients.forEach(function (client) {
                         if (client.readyState === WebSocket.OPEN) {
-                            client.send(JSON.stringify(data));
+                            client.send(JSON.stringify({
+                                text: data.text,
+                                isFinal: false,
+                            }));
+                        }
+                    });
+                });
+                transcriber.on("transcript.final", function (data) {
+                    wss.clients.forEach(function (client) {
+                        if (client.readyState === WebSocket.OPEN) {
+                            client.send(JSON.stringify({
+                                text: data.text,
+                                isFinal: true,
+                            }));
                         }
                     });
                 });

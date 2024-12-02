@@ -1,13 +1,7 @@
 import { AssemblyAI, RealtimeTranscript } from "assemblyai";
-import { WebSocketServer, WebSocket } from "ws";
+import { WebSocketServer } from "ws";
 
 require("dotenv").config();
-
-declare module "ws" {
-  interface WebSocket {
-    isAlive: boolean;
-  }
-}
 
 const run = async () => {
   if (!process.env.NEXT_PUBLIC_ASSEMBLYAI_API_KEY) {
@@ -17,6 +11,7 @@ const run = async () => {
     apiKey: process.env.NEXT_PUBLIC_ASSEMBLYAI_API_KEY,
   });
   const SAMPLE_RATE = 16_000;
+  const BUFFER_SIZE = 4096;
 
   // Khởi tạo transcriber ở ngoài
   const transcriber = client.realtime.transcriber({
@@ -28,14 +23,7 @@ const run = async () => {
     port: 8080,
     perMessageDeflate: false,
     maxPayload: 1024 * 1024,
-    clientTracking: true,
-    backlog: 100,
   });
-
-  // Thêm heartbeat để duy trì kết nối
-  function heartbeat(this: any) {
-    this.isAlive = true;
-  }
 
   // Thiết lập các listeners cho transcriber
   transcriber.on("open", ({ sessionId }) => {
@@ -49,11 +37,28 @@ const run = async () => {
     isAssemblyAIReady = false;
   });
 
-  transcriber.on("transcript.final", (data: RealtimeTranscript) => {
-    console.log("Received transcript:", data);
+  transcriber.on("transcript", (data: RealtimeTranscript) => {
     wss.clients.forEach((client) => {
       if (client.readyState === WebSocket.OPEN) {
-        client.send(JSON.stringify(data));
+        client.send(
+          JSON.stringify({
+            text: data.text,
+            isFinal: false,
+          })
+        );
+      }
+    });
+  });
+
+  transcriber.on("transcript.final", (data: RealtimeTranscript) => {
+    wss.clients.forEach((client) => {
+      if (client.readyState === WebSocket.OPEN) {
+        client.send(
+          JSON.stringify({
+            text: data.text,
+            isFinal: true,
+          })
+        );
       }
     });
   });
@@ -65,9 +70,6 @@ const run = async () => {
 
   // Thiết lập WebSocket server
   wss.on("connection", (ws) => {
-    (ws as any).isAlive = true;
-    ws.on("pong", heartbeat);
-
     console.log("Client connected");
 
     ws.on("message", async (message) => {
@@ -114,17 +116,6 @@ const run = async () => {
   } catch (error) {
     console.error("Initial connection to AssemblyAI failed:", error);
   }
-
-  // Kiểm tra kết nối định kỳ
-  const interval = setInterval(() => {
-    wss.clients.forEach((ws) => {
-      if ((ws as any).isAlive === false) {
-        return ws.terminate();
-      }
-      (ws as any).isAlive = false;
-      ws.ping();
-    });
-  }, 30000);
 };
 
 run().catch((error) => {

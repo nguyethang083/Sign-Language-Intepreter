@@ -15,8 +15,15 @@ import RemoteVideoComponent from "@/app/component/videocall/RemoteVideoComponent
 class VideoArea extends Component {
   constructor(props) {
     super(props);
-    this.state = { zg: null };
+    this.state = {
+      zg: null,
+      subtitle: "",
+      tempSubtitle: "",
+    };
     this.remoteVideoRef = createRef();
+    this.audioContext = null;
+    this.processor = null;
+    this.updateSubtitle = this.updateSubtitle.bind(this);
   }
 
   async componentDidMount() {
@@ -49,68 +56,76 @@ class VideoArea extends Component {
     });
   }
 
+  updateSubtitle = (text, isFinal) => {
+    if (isFinal) {
+      this.setState((prevState) => {
+        const newSubtitle = prevState.subtitle + " " + text;
+        const sentences = newSubtitle.split(". ");
+        return {
+          subtitle:
+            sentences.length > 2 ? sentences.slice(-2).join(". ") : newSubtitle,
+          tempSubtitle: "",
+        };
+      });
+    } else {
+      this.setState({ tempSubtitle: text });
+    }
+  };
+
   handleStreamUpdate = async (roomID, updateType, streamList) => {
-    if (updateType === "ADD" && streamList.length > 0) {
+    if (
+      updateType === "ADD" &&
+      streamList.length > 0 &&
+      this.remoteVideoRef.current
+    ) {
       const remoteStream = await this.state.zg.startPlayingStream(
         streamList[0].streamID
       );
-      if (this.remoteVideoRef.current) {
-        this.remoteVideoRef.current.srcObject = remoteStream;
-        this.remoteVideoRef.current.muted = false;
+      this.remoteVideoRef.current.srcObject = remoteStream;
+      this.remoteVideoRef.current.muted = false;
 
-        try {
-          await initializeWebSocket();
+      try {
+        await initializeWebSocket(this.updateSubtitle);
 
-          const audioContext = new (window.AudioContext ||
+        if (!this.audioContext) {
+          this.audioContext = new (window.AudioContext ||
             window.webkitAudioContext)({
             sampleRate: 16000,
           });
+        }
 
-          const BUFFER_SIZE = 8192;
+        const source = this.audioContext.createMediaStreamSource(remoteStream);
 
-          const source = audioContext.createMediaStreamSource(remoteStream);
-          const processor = audioContext.createScriptProcessor(
-            BUFFER_SIZE,
-            1,
-            1
-          );
-
-          let lastProcessingTime = 0;
-          const PROCESS_INTERVAL = 100;
-
-          processor.onaudioprocess = async (event) => {
-            const currentTime = Date.now();
-            if (currentTime - lastProcessingTime < PROCESS_INTERVAL) {
-              return;
-            }
-
+        if (!this.processor) {
+          this.processor = this.audioContext.createScriptProcessor(16384, 1, 1);
+          this.processor.onaudioprocess = async (event) => {
             try {
-              const text = await processAudioData(
-                event.inputBuffer.getChannelData(0)
-              );
-              if (text) {
-                const subtitleElement = document.querySelector("#subtitle");
-                if (subtitleElement) {
-                  subtitleElement.textContent = text;
-                }
-              }
+              await processAudioData(event.inputBuffer.getChannelData(0));
             } catch (error) {
               console.error("Error processing audio:", error);
             }
-
-            lastProcessingTime = currentTime;
           };
-
-          source.connect(processor);
-          processor.connect(audioContext.destination);
-        } catch (error) {
-          console.error("Error initializing WebSocket:", error);
         }
+
+        source.connect(this.processor);
+        this.processor.connect(this.audioContext.destination);
+      } catch (error) {
+        console.error("Error initializing WebSocket:", error);
       }
     }
   };
 
+  componentWillUnmount() {
+    if (this.processor) {
+      this.processor.disconnect();
+    }
+    if (this.audioContext) {
+      this.audioContext.close();
+    }
+  }
+
   render() {
+    const { subtitle, tempSubtitle } = this.state;
     return (
       <div className="flex-grow flex items-center justify-between">
         <LocalVideoComponent />
@@ -124,10 +139,16 @@ class VideoArea extends Component {
             color: "white",
             fontSize: 20,
             bottom: 80,
-            left: 400,
+            left: 200,
+            maxWidth: "60%",
+            textAlign: "center",
+            backgroundColor: "rgba(0, 0, 0, 0.5)",
+            padding: "10px",
+            borderRadius: "5px",
           }}
         >
-          This is a subtitle text
+          {subtitle}
+          <span style={{ color: "#cccccc" }}>{tempSubtitle}</span>
         </div>
       </div>
     );

@@ -1,7 +1,8 @@
 let websocket: WebSocket | null = null;
-let messageHandler: ((event: MessageEvent) => void) | null = null;
 
-export const initializeWebSocket = (): Promise<void> => {
+export const initializeWebSocket = (
+  onTranscript: (text: string, isFinal: boolean) => void
+): Promise<void> => {
   return new Promise((resolve, reject) => {
     if (websocket && websocket.readyState === WebSocket.OPEN) {
       resolve();
@@ -10,14 +11,19 @@ export const initializeWebSocket = (): Promise<void> => {
 
     websocket = new WebSocket("ws://localhost:8080");
 
-    if (websocket.bufferedAmount === undefined) {
-      websocket.binaryType = "arraybuffer";
-    }
+    websocket.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        onTranscript(data.text, data.isFinal);
+      } catch (error) {
+        console.error("Error processing message:", error);
+      }
+    };
 
     const connectionTimeout = setTimeout(() => {
       websocket?.close();
       reject(new Error("WebSocket connection timeout"));
-    }, 5000);
+    }, 10000);
 
     websocket.onopen = () => {
       clearTimeout(connectionTimeout);
@@ -39,38 +45,17 @@ export const initializeWebSocket = (): Promise<void> => {
 
 export const processAudioData = async (
   audioData: Float32Array
-): Promise<string | null> => {
-  if (!websocket || websocket.readyState !== WebSocket.OPEN) {
-    await initializeWebSocket();
+): Promise<void> => {
+  if (!audioData || !websocket || websocket.readyState !== WebSocket.OPEN) {
+    throw new Error("WebSocket not ready or no audio data");
   }
 
+  // Chuyển đổi Float32Array sang Int16Array (PCM 16-bit)
   const pcmData = new Int16Array(audioData.length);
-  const scale = 32767;
   for (let i = 0; i < audioData.length; i++) {
-    pcmData[i] = Math.max(-scale, Math.min(scale, audioData[i] * scale));
+    const s = Math.max(-1, Math.min(1, audioData[i]));
+    pcmData[i] = s < 0 ? s * 32768 : s * 32767;
   }
 
-  return new Promise((resolve, reject) => {
-    if (!websocket) {
-      reject(new Error("WebSocket not initialized"));
-      return;
-    }
-
-    if (messageHandler) {
-      websocket.removeEventListener("message", messageHandler);
-    }
-
-    messageHandler = (event: MessageEvent) => {
-      try {
-        const data = JSON.parse(event.data);
-        resolve(data.text);
-      } catch (error) {
-        console.error("Error processing message:", error);
-        reject(error);
-      }
-    };
-
-    websocket.addEventListener("message", messageHandler);
-    websocket.send(pcmData.buffer);
-  });
+  websocket.send(pcmData.buffer);
 };
