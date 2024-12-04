@@ -8,12 +8,14 @@ const VideoCallComponent = () => {
   const [isSignLanguage, setIsSignLanguage] = useState(false);
   const [selectedLanguage, setSelectedLanguage] = useState("off");
   return (
-    <div className="flex flex-col h-screen bg-gray-900 text-white">
-      <VideoArea
-        isSubtitle={isSubtitle}
-        isSignLanguage={isSignLanguage}
-        selectedLanguage={selectedLanguage}
-      />
+    <div className="flex flex-col bg-gray-900 text-white">
+      <div className="py-4">
+        <VideoArea
+          isSubtitle={isSubtitle}
+          isSignLanguage={isSignLanguage}
+          selectedLanguage={selectedLanguage}
+        />
+      </div>
       <ToolBar
         isSubtitle={isSubtitle}
         setIsSubtitle={setIsSubtitle}

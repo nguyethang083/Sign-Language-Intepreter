@@ -22,6 +22,7 @@ class VideoArea extends Component {
       tempSubtitle: "",
       translatedSubtitle: "",
     };
+    this.userID = "user-" + Math.floor(Math.random() * 10000);
     this.remoteVideoRef = createRef();
     this.audioContext = null;
     this.processor = null;
@@ -95,39 +96,48 @@ class VideoArea extends Component {
       streamList.length > 0 &&
       this.remoteVideoRef.current
     ) {
-      const remoteStream = await this.state.zg.startPlayingStream(
-        streamList[0].streamID
-      );
-      this.remoteVideoRef.current.srcObject = remoteStream;
-      this.remoteVideoRef.current.muted = false;
+      const remoteStreamInfo = streamList[streamList.length - 1];
 
-      try {
-        await initializeWebSocket(this.updateSubtitle);
+      if (!remoteStreamInfo.streamID.includes(this.userID)) {
+        const remoteStream = await this.state.zg.startPlayingStream(
+          remoteStreamInfo.streamID
+        );
+        this.remoteVideoRef.current.srcObject = remoteStream;
+        this.remoteVideoRef.current.muted = false;
 
-        if (!this.audioContext) {
-          this.audioContext = new (window.AudioContext ||
-            window.webkitAudioContext)({
-            sampleRate: 16000,
-          });
+        try {
+          await initializeWebSocket(this.updateSubtitle);
+
+          if (!this.audioContext) {
+            this.audioContext = new (window.AudioContext ||
+              window.webkitAudioContext)({
+              sampleRate: 16000,
+            });
+          }
+
+          const source =
+            this.audioContext.createMediaStreamSource(remoteStream);
+
+          if (!this.processor) {
+            this.processor = this.audioContext.createScriptProcessor(
+              16384,
+              1,
+              1
+            );
+            this.processor.onaudioprocess = async (event) => {
+              try {
+                await processAudioData(event.inputBuffer.getChannelData(0));
+              } catch (error) {
+                console.error("Error processing audio:", error);
+              }
+            };
+          }
+
+          source.connect(this.processor);
+          this.processor.connect(this.audioContext.destination);
+        } catch (error) {
+          console.error("Error initializing WebSocket:", error);
         }
-
-        const source = this.audioContext.createMediaStreamSource(remoteStream);
-
-        if (!this.processor) {
-          this.processor = this.audioContext.createScriptProcessor(16384, 1, 1);
-          this.processor.onaudioprocess = async (event) => {
-            try {
-              await processAudioData(event.inputBuffer.getChannelData(0));
-            } catch (error) {
-              console.error("Error processing audio:", error);
-            }
-          };
-        }
-
-        source.connect(this.processor);
-        this.processor.connect(this.audioContext.destination);
-      } catch (error) {
-        console.error("Error initializing WebSocket:", error);
       }
     }
   };
@@ -185,7 +195,7 @@ class VideoArea extends Component {
           <img
             src="/quick_test.gif"
             alt="Speech-to-Text Indicator"
-            className="absolute bottom-[2%] right-[5%] w-[150px] h-[150px]"
+            className="absolute bottom-[2%] right-[8%] w-[150px] h-[150px]"
           />
         )}
       </div>
