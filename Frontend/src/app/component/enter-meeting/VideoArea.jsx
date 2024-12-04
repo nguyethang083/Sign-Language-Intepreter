@@ -11,6 +11,7 @@ import {
 } from "@/app/helpers/audioProcessor";
 import LocalVideoComponent from "@/app/component/videocall/LocalVideoComponent";
 import RemoteVideoComponent from "@/app/component/videocall/RemoteVideoComponent";
+import translations from "@/../public/translate/en-vi.json";
 
 class VideoArea extends Component {
   constructor(props) {
@@ -19,6 +20,7 @@ class VideoArea extends Component {
       zg: null,
       subtitle: "",
       tempSubtitle: "",
+      translatedSubtitle: "",
     };
     this.remoteVideoRef = createRef();
     this.audioContext = null;
@@ -61,9 +63,24 @@ class VideoArea extends Component {
       this.setState((prevState) => {
         const newSubtitle = prevState.subtitle + " " + text;
         const sentences = newSubtitle.split(". ");
+        const finalSubtitle =
+          sentences.length > 2 ? sentences.slice(-2).join(". ") : newSubtitle;
+
+        const translatedWords = finalSubtitle
+          .toLowerCase()
+          .split(" ")
+          .map((word) => {
+            // Remove punctuation marks before looking up translation
+            const cleanWord = word.replace(/[.,!?]$/, "");
+            // Get punctuation mark if it exists
+            const punctuation = word.match(/[.,!?]$/)?.[0] || "";
+            // Get translation and add back punctuation
+            return (translations[cleanWord] || cleanWord) + punctuation;
+          });
+
         return {
-          subtitle:
-            sentences.length > 2 ? sentences.slice(-2).join(". ") : newSubtitle,
+          subtitle: finalSubtitle,
+          translatedSubtitle: translatedWords.join(" "),
           tempSubtitle: "",
         };
       });
@@ -125,31 +142,52 @@ class VideoArea extends Component {
   }
 
   render() {
-    const { subtitle, tempSubtitle } = this.state;
+    const { subtitle, tempSubtitle, translatedSubtitle } = this.state;
+    const { isSubtitle, isSignLanguage } = this.props;
+
     return (
-      <div className="flex-grow flex items-center justify-between">
-        <LocalVideoComponent />
-        <div className="participant-videos flex flex-wrap justify-center mt-4">
-          <RemoteVideoComponent ref={this.remoteVideoRef} />
+      <div className="flex-grow flex flex-col items-center justify-center relative">
+        <div className="flex flex-row justify-center items-center w-full">
+          <LocalVideoComponent />
+          <div className="participant-videos flex flex-wrap justify-center mt-4">
+            <RemoteVideoComponent ref={this.remoteVideoRef} />
+          </div>
         </div>
-        <div
-          id="subtitle"
-          style={{
-            position: "absolute",
-            color: "white",
-            fontSize: 20,
-            bottom: 80,
-            left: 200,
-            maxWidth: "60%",
-            textAlign: "center",
-            backgroundColor: "rgba(0, 0, 0, 0.5)",
-            padding: "10px",
-            borderRadius: "5px",
-          }}
-        >
-          {subtitle}
-          <span style={{ color: "#cccccc" }}>{tempSubtitle}</span>
+
+        <div>
+          <div
+            id="translated-subtitle"
+            className={`absolute text-yellow-400 text-xl bottom-[15%] left-1/2 -translate-x-1/2 max-w-[80%] text-center bg-black/50 p-2.5 rounded-md `}
+          >
+            {translatedSubtitle}
+            <span className="text-yellow-400">
+              {this.props.selectedLanguage === "en" && "Translated Subtitle"}
+              {this.props.selectedLanguage === "vi" && "Phụ đề dịch"}
+              {this.props.selectedLanguage === "de" && "Untertitel übersetzen"}
+              {this.props.selectedLanguage === "fr" && "Sous-titre traduit"}
+              {this.props.selectedLanguage === "ja" && "翻訳字幕"}
+              {this.props.selectedLanguage === "ko" && "번역된 자막"}
+              {this.props.selectedLanguage === "zh" && "翻译字幕"}
+            </span>
+          </div>
+          <div
+            id="subtitle"
+            className={`absolute text-white text-xl bottom-[10%] left-1/2 -translate-x-1/2 max-w-[80%] text-center bg-black/50 p-2.5 rounded-md mt-[4px] ${
+              isSubtitle ? "block" : "hidden"
+            }`}
+          >
+            {subtitle}
+            <span className="text-gray-300">{tempSubtitle}</span>
+          </div>
         </div>
+
+        {isSignLanguage && (
+          <img
+            src="/quick_test.gif"
+            alt="Speech-to-Text Indicator"
+            className="absolute bottom-[2%] right-[5%] w-[150px] h-[150px]"
+          />
+        )}
       </div>
     );
   }

@@ -52,11 +52,11 @@ const ZoomSignIn = () => {
           </div>
 
           {/* Sign in button */}
-          <div className="w-full py-3 bg-[#2D8CFF] text-white rounded-lg hover:bg-blue-600 transition-colors text-center">
-            <Link href={"/home"}>
+          <Link href={"/home"}>
+            <div className="w-full py-3 bg-[#2D8CFF] text-white rounded-lg hover:bg-blue-600 transition-colors text-center mt-4">
               <button type="submit">Sign In</button>
-            </Link>
-          </div>
+            </div>
+          </Link>
 
           {/* Keep me signed in */}
           <div className="flex items-center">

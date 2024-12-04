@@ -1,13 +1,18 @@
 import Link from "next/link";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 
-const ToolBar = () => {
-  const [isAudioOn, setIsAudioOn] = useState(false);
-  const [isVideoOn, setIsVideoOn] = useState(false);
+const ToolBar = ({
+  isSubtitle,
+  setIsSubtitle,
+  isSignLanguage,
+  setIsSignLanguage,
+  selectedLanguage,
+  setSelectedLanguage,
+}) => {
+  const [isAudioOn, setIsAudioOn] = useState(true);
+  const [isVideoOn, setIsVideoOn] = useState(true);
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [isParticipantsOpen, setIsParticipantsOpen] = useState(false);
-  const [isEyeTracking, setIsEyeTracking] = useState(false);
-  const [isSubtitle, setIsSubtitle] = useState(false);
   const [messages, setMessages] = useState([]);
   const [participants, setParticipants] = useState([
     { name: "Duc Anh Phung", isHost: true },
@@ -16,6 +21,25 @@ const ToolBar = () => {
   ]);
 
   const [currentMessage, setCurrentMessage] = useState("");
+  const [isTranslating, setIsTranslating] = useState(false);
+  const [showLanguageMenu, setShowLanguageMenu] = useState(false);
+
+  const languages = [
+    { code: "en", name: "English" },
+    { code: "vi", name: "Tiếng Việt" },
+    { code: "ja", name: "日本語" },
+    { code: "ko", name: "한국어" },
+    { code: "zh", name: "中文" },
+    { code: "fr", name: "Français" },
+    { code: "de", name: "Deutsch" },
+    { code: "off", name: "Turn off" },
+  ];
+
+  const handleLanguageSelect = (langCode) => {
+    setSelectedLanguage(langCode);
+    setIsTranslating(true);
+    setShowLanguageMenu(false);
+  };
 
   const handleSendMessage = () => {
     if (currentMessage.trim()) {
@@ -26,26 +50,24 @@ const ToolBar = () => {
       setCurrentMessage("");
     }
   };
-  useEffect(() => {
-    if (!isEyeTracking) {
-      const removeElements = (selector) => {
-        document.querySelectorAll(selector).forEach((el) => el.remove());
-      };
 
-      removeElements("#webgazerVideoContainer");
-      removeElements("#webgazerGazeDot");
-    }
-  }, [isEyeTracking]);
+  // Memoize the current language name
+  const currentLanguageName = useMemo(() => {
+    const selectedLang = languages.find(
+      (lang) => lang.code === selectedLanguage
+    );
+    return selectedLang ? selectedLang.name : "Translate";
+  }, [selectedLanguage, languages]);
 
   return (
     <>
       {/* Chat Sidebar */}
       {isChatOpen && (
-        <div className="absolute top-0 right-0 bottom-0 w-80 bg-gray-800 border-l border-gray-700 flex flex-col">
+        <div className="absolute top-0 right-0 bottom-0 w-80 bg-gray-900 border-l border-gray-700 flex flex-col shadow-lg">
           <div className="p-4 border-b border-gray-700 flex justify-between items-center">
-            <h2 className="text-lg font-semibold">Chat</h2>
+            <h2 className="text-lg font-semibold text-white">Chat</h2>
             <button
-              className="text-gray-400 hover:text-white"
+              className="text-gray-400 hover:text-white transition duration-200"
               onClick={() => setIsChatOpen(false)}
             >
               ✖️
@@ -69,14 +91,14 @@ const ToolBar = () => {
             <div className="flex space-x-2">
               <input
                 type="text"
-                className="flex-1 bg-gray-700 text-white px-4 py-2 rounded-lg focus:outline-none"
+                className="flex-1 bg-gray-700 text-white px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200"
                 placeholder="Type a message..."
                 value={currentMessage}
                 onChange={(e) => setCurrentMessage(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
               />
               <button
-                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg"
+                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition duration-200"
                 onClick={handleSendMessage}
               >
                 Send
@@ -88,11 +110,11 @@ const ToolBar = () => {
 
       {/* Participants Sidebar */}
       {isParticipantsOpen && (
-        <div className="absolute right-0 top-0 bottom-0 w-80 bg-gray-800 border-l border-gray-700 flex flex-col">
+        <div className="absolute right-0 top-0 bottom-0 w-80 bg-gray-900 border-l border-gray-700 flex flex-col shadow-lg">
           <div className="p-4 border-b border-gray-700 flex justify-between items-center">
-            <h2 className="text-lg font-semibold">Participants</h2>
+            <h2 className="text-lg font-semibold text-white">Participants</h2>
             <button
-              className="text-gray-400 hover:text-white"
+              className="text-gray-400 hover:text-white transition duration-200"
               onClick={() => setIsParticipantsOpen(false)}
             >
               ✖️
@@ -104,7 +126,7 @@ const ToolBar = () => {
                 key={index}
                 className="flex items-center justify-between bg-gray-700 px-4 py-2 rounded-lg"
               >
-                <span>{participant.name}</span>
+                <span className="text-white">{participant.name}</span>
                 {participant.isHost && (
                   <span className="text-sm text-blue-400">Host</span>
                 )}
@@ -113,64 +135,96 @@ const ToolBar = () => {
           </div>
         </div>
       )}
-      <div className="flex items-center justify-between h-[12%] bg-gray-800 py-3 border-t border-gray-700">
+
+      <div className="flex items-center justify-between h-[12%] bg-gray-900 py-3 border-t border-gray-700 shadow-lg">
         <div>
           <button
-            className={`mx-2 px-4 py-2 hover:bg-gray-700 rounded-lg`}
+            className={`mx-2 px-4 py-2 hover:bg-gray-700 rounded-lg transition duration-200`}
             onClick={() => setIsAudioOn(!isAudioOn)}
           >
             <div className="text-[20px]">{isAudioOn ? "🔊" : "🔇"}</div>
-            <div>Audio</div>
+            <div className="text-white">Audio</div>
           </button>
           <button
-            className={`mx-2 px-4 py-2 hover:bg-gray-700 rounded-lg`}
+            className={`mx-2 px-4 py-2 hover:bg-gray-700 rounded-lg transition duration-200`}
             onClick={() => setIsVideoOn(!isVideoOn)}
           >
             <div className="text-[20px]">{isVideoOn ? "📹" : "📷"}</div>
-            <div>{isVideoOn ? "Stop Video" : "Start Video"}</div>
+            <div className="text-white">
+              {isVideoOn ? "Stop Video" : "Start Video"}
+            </div>
           </button>
         </div>
 
-        <div>
+        <div className="relative">
           <button
-            className="mx-2 px-4 py-2 hover:bg-gray-700 rounded-lg"
+            className="mx-2 px-4 py-2 hover:bg-gray-700 rounded-lg transition duration-200"
             onClick={() => setIsChatOpen(!isChatOpen)}
           >
             <div className="text-[20px]">💬</div>
-            <div>Chat</div>
+            <div className="text-white">Chat</div>
           </button>
 
           <button
-            className="mx-2 px-4 py-2 hover:bg-gray-700 rounded-lg"
+            className="mx-2 px-4 py-2 hover:bg-gray-700 rounded-lg transition duration-200"
             onClick={() => setIsParticipantsOpen(!isParticipantsOpen)}
           >
             <div className="text-[20px]">🙋‍♂️</div>
-            <div>Participants</div>
+            <div className="text-white">Participants</div>
           </button>
 
-          <button className="mx-2 px-4 py-2 hover:bg-gray-700 rounded-lg">
+          <button className="mx-2 px-4 py-2 hover:bg-gray-700 rounded-lg transition duration-200">
             <div className="text-[20px]">🎥</div>
-            <div>Share</div>
+            <div className="text-white">Share</div>
           </button>
           <button
             onClick={() => setIsSubtitle(!isSubtitle)}
-            className="mx-2 px-4 py-2 hover:bg-gray-700 rounded-lg"
+            className="mx-2 px-4 py-2 hover:bg-gray-700 rounded-lg transition duration-200"
           >
             <div className="text-[20px]">{isSubtitle ? "📤" : "📥"}</div>
-            <div>Subtitle</div>
+            <div className="text-white">Subtitle</div>
           </button>
 
           <button
-            onClick={() => setIsEyeTracking(!isEyeTracking)}
-            className="mx-2 px-4 py-2 hover:bg-gray-700 rounded-lg"
+            onClick={() => setIsSignLanguage(!isSignLanguage)}
+            className="mx-2 px-4 py-2 hover:bg-gray-700 rounded-lg transition duration-200"
           >
-            <div className="text-[20px]">{isEyeTracking ? "😐" : "😑"}</div>
-            <div>Eye tracking</div>
+            <div className="text-[20px]">{isSignLanguage ? "🤟" : "👋"}</div>
+            <div className="text-white">Sign language</div>
           </button>
+
+          <div className="relative inline-block">
+            <button
+              onClick={() => setShowLanguageMenu(!showLanguageMenu)}
+              className="mx-2 px-4 py-2 hover:bg-gray-700 rounded-lg transition duration-200"
+            >
+              <div className="text-[20px]">🌐</div>
+              <div className="text-white">{currentLanguageName}</div>
+            </button>
+
+            {showLanguageMenu && (
+              <div className="absolute bottom-full mb-2 right-0 w-48 bg-gray-800 rounded-lg shadow-lg border border-gray-700 py-2">
+                {languages.map((lang) => (
+                  <button
+                    key={lang.code}
+                    onClick={() => handleLanguageSelect(lang.code)}
+                    className={`w-full px-4 py-2 text-left hover:bg-gray-700 transition-colors duration-200
+                      ${
+                        selectedLanguage === lang.code
+                          ? "bg-gray-700 text-blue-400"
+                          : "text-white"
+                      }`}
+                  >
+                    {lang.name}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
 
         <Link href={"/summary"}>
-          <button className="mx-2 px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg">
+          <button className="mx-2 px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg transition duration-200">
             ❌ End
           </button>
         </Link>

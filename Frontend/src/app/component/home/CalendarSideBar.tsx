@@ -10,7 +10,7 @@ const CalendarSideBar = () => {
                 <p className="text-gray-300">Sunday, November 17</p>
               </div>
               <div className="flex space-x-2">
-                <button className="p-2  rounded">
+                <button className="p-2 rounded hover:bg-gray-100">
                   <svg
                     className="w-5 h-5"
                     fill="none"
@@ -31,7 +31,7 @@ const CalendarSideBar = () => {
                     />
                   </svg>
                 </button>
-                <button className="p-2  rounded">···</button>
+                <button className="p-2 rounded hover:bg-gray-100">···</button>
               </div>
             </div>
           </div>
@@ -129,11 +129,6 @@ const CalendarSideBar = () => {
             </div>
 
             <div className="mt-8 flex flex-col items-center justify-center text-gray-500">
-              <img
-                src="/api/placeholder/200/150"
-                alt="No meetings"
-                className="mb-4"
-              />
               <p className="text-center">
                 No meetings
                 <br />
@@ -182,4 +177,5 @@ const CalendarSideBar = () => {
     </>
   );
 };
+
 export default CalendarSideBar;
