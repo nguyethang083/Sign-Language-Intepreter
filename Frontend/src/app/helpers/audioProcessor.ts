@@ -50,12 +50,13 @@ export const processAudioData = async (
     throw new Error("WebSocket not ready or no audio data");
   }
 
-  // Chuyển đổi Float32Array sang Int16Array (PCM 16-bit)
+  // Sử dụng TypedArray để tối ưu hóa chuyển đổi
   const pcmData = new Int16Array(audioData.length);
   for (let i = 0; i < audioData.length; i++) {
     const s = Math.max(-1, Math.min(1, audioData[i]));
     pcmData[i] = s < 0 ? s * 32768 : s * 32767;
   }
 
+  // Gửi dữ liệu âm thanh qua WebSocket
   websocket.send(pcmData.buffer);
 };

@@ -1,8 +1,30 @@
+"use client";
 import AccountOptions from "@/app/component/signup-options/AccountOptions";
 import Link from "next/link";
-import React from "react";
+import React, { useState } from "react";
+import { handleSignIn } from "@/app/helpers/firebase/signin";
+import EmailInput from "@/app/component/signin/EmailInput";
+import PasswordInput from "@/app/component/signin/PasswordInput";
+import SignInButton from "@/app/component/signin/SignInButton";
 
 const ZoomSignIn = () => {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleNavigation = () => {
+    setIsLoading(true);
+  };
+
+  const handleSignInClick = async (e: React.MouseEvent) => {
+    setIsLoading(true);
+    const success = await handleSignIn(e, email, password);
+    if (success) {
+      window.location.href = "/home";
+    }
+    setIsLoading(false);
+  };
+
   return (
     <div className="min-h-screen bg-white flex flex-col items-center pt-16 px-4">
       {/* Logo */}
@@ -30,33 +52,9 @@ const ZoomSignIn = () => {
       {/* Sign in form */}
       <div className="w-full max-w-md">
         <form className="space-y-4">
-          {/* Email input */}
-          <div>
-            <input
-              type="email"
-              placeholder="Enter your email"
-              className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none"
-            />
-          </div>
-
-          {/* Password input */}
-          <div className="relative">
-            <input
-              type="password"
-              placeholder="Enter your password"
-              className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none"
-            />
-            <button className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
-              Forgot?
-            </button>
-          </div>
-
-          {/* Sign in button */}
-          <Link href={"/home"}>
-            <div className="w-full py-3 bg-[#2D8CFF] text-white rounded-lg hover:bg-blue-600 transition-colors text-center mt-4">
-              <button type="submit">Sign In</button>
-            </div>
-          </Link>
+          <EmailInput email={email} setEmail={setEmail} />
+          <PasswordInput password={password} setPassword={setPassword} />
+          <SignInButton isLoading={isLoading} onSignIn={handleSignInClick} />
 
           {/* Keep me signed in */}
           <div className="flex items-center">
@@ -90,7 +88,11 @@ const ZoomSignIn = () => {
 
       {/* Bottom navigation */}
       <div className=" w-full bottom-0 left-0 right-0 p-4 flex justify-between bg-white">
-        <button className="text-gray-600 hover:text-gray-900 flex items-center">
+        <button
+          className="text-gray-600 hover:text-gray-900 flex items-center"
+          onClick={handleNavigation}
+          disabled={isLoading}
+        >
           <svg
             className="w-4 h-4 mr-1"
             fill="none"
@@ -104,7 +106,7 @@ const ZoomSignIn = () => {
               d="M15 19l-7-7 7-7"
             />
           </svg>
-          <Link href={"/"}>Back</Link>
+          <Link href={"/"}>{isLoading ? "Loading..." : "Back"}</Link>
         </button>
         <button className="text-blue-500 hover:text-blue-600">Sign Up</button>
       </div>

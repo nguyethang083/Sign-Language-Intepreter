@@ -3,7 +3,6 @@ import React, { Fragment, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import "./MeetingSummary.css"; // Import the CSS file
 import Skeleton from "@mui/material/Skeleton";
-import Stack from "@mui/material/Stack";
 import Image from "next/image";
 import {
   FiHome,
@@ -34,7 +33,13 @@ const languages = [
 ];
 
 // Thay thế nút chuyển đổi ngôn ngữ cũ bằng Menu dropdown mới
-const LanguageSelector = ({ language, setLanguage }) => {
+const LanguageSelector = ({
+  language,
+  setLanguage,
+}: {
+  language: string;
+  setLanguage: (language: "vi" | "en") => void;
+}) => {
   return (
     <Menu as="div" className="relative inline-block text-left">
       <div>
@@ -62,7 +67,9 @@ const LanguageSelector = ({ language, setLanguage }) => {
               <Menu.Item key={lang.code}>
                 {({ active }) => (
                   <button
-                    onClick={() => lang.enabled && setLanguage(lang.code)}
+                    onClick={() =>
+                      lang.enabled && setLanguage(lang.code as "vi" | "en")
+                    }
                     className={`
                       ${active ? "bg-gray-100" : ""} 
                       ${!lang.enabled ? "opacity-50 cursor-not-allowed" : ""}
@@ -98,8 +105,11 @@ const MeetingSummary = () => {
   const [language, setLanguage] = React.useState<"vi" | "en">("vi");
 
   useEffect(() => {
-    setTimeout(() => {}, 3000);
-    setLoading(false);
+    const timer = setTimeout(() => {
+      setLoading(false);
+    }, 1000);
+
+    return () => clearTimeout(timer);
   }, []);
 
   const content = {
@@ -120,10 +130,26 @@ const MeetingSummary = () => {
       summary: {
         title: "Tóm tắt",
         sections: {
-          mainFeatures: "Giới thiệu tính năng chính",
-          demoFeatures: "Demo tính năng",
-          technicalDetails: "Chi tiết kỹ thuật",
-          conclusion: "Kết luận",
+          mainFeatures: {
+            title: "Giới thiệu tính năng chính",
+            content:
+              "Ứng dụng tích hợp các tính năng video call cơ bản cùng với khả năng mô phỏng ngôn ngữ ký hiệu độc đáo.",
+          },
+          demoFeatures: {
+            title: "Demo tính năng",
+            content:
+              "Trình diễn thành công việc chuyển đổi giọng nói thành phụ đề và dịch thuật đa ngôn ngữ.",
+          },
+          technicalDetails: {
+            title: "Chi tiết kỹ thuật",
+            content:
+              "Sử dụng công nghệ WebRTC cho video call, AI cho xử lý ngôn ngữ và animation 3D cho mô phỏng ký hiệu.",
+          },
+          conclusion: {
+            title: "Kết luận",
+            content:
+              "Ứng dụng thể hiện tiềm năng lớn trong việc hỗ trợ giao tiếp cho người khiếm thính.",
+          },
         },
       },
     },
@@ -144,10 +170,26 @@ const MeetingSummary = () => {
       summary: {
         title: "Summary",
         sections: {
-          mainFeatures: "Main Features Introduction",
-          demoFeatures: "Demo Features",
-          technicalDetails: "Technical Details",
-          conclusion: "Conclusion",
+          mainFeatures: {
+            title: "Main Features Introduction",
+            content:
+              "Application integrates basic video call features along with unique sign language simulation capabilities.",
+          },
+          demoFeatures: {
+            title: "Demo Features",
+            content:
+              "Successfully demonstrated speech-to-subtitle conversion and multilingual translation.",
+          },
+          technicalDetails: {
+            title: "Technical Details",
+            content:
+              "Utilizes WebRTC for video calls, AI for language processing, and 3D animation for sign language simulation.",
+          },
+          conclusion: {
+            title: "Conclusion",
+            content:
+              "Application shows great potential in supporting communication for the hearing impaired.",
+          },
         },
       },
     },
@@ -341,30 +383,16 @@ const MeetingSummary = () => {
                 {content[language].summary.title}
               </h2>
               <div className="space-y-4 text-gray-700 animate-fade-in">
-                <div>
-                  <h3 className="font-medium text-gray-800">
-                    {content[language].summary.sections.mainFeatures}
-                  </h3>
-                  <p>{content[language].summary.sections.mainFeatures}</p>
-                </div>
-                <div>
-                  <h3 className="font-medium text-gray-800">
-                    {content[language].summary.sections.demoFeatures}
-                  </h3>
-                  <p>{content[language].summary.sections.demoFeatures}</p>
-                </div>
-                <div>
-                  <h3 className="font-medium text-gray-800">
-                    {content[language].summary.sections.technicalDetails}
-                  </h3>
-                  <p>{content[language].summary.sections.technicalDetails}</p>
-                </div>
-                <div>
-                  <h3 className="font-medium text-gray-800">
-                    {content[language].summary.sections.conclusion}
-                  </h3>
-                  <p>{content[language].summary.sections.conclusion}</p>
-                </div>
+                {Object.entries(content[language].summary.sections).map(
+                  ([key, section]) => (
+                    <div key={key}>
+                      <h3 className="font-medium text-gray-800">
+                        {section.title}
+                      </h3>
+                      <p>{section.content}</p>
+                    </div>
+                  )
+                )}
               </div>
             </>
           )}

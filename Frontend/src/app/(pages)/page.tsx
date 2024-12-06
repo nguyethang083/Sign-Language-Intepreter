@@ -3,10 +3,10 @@ import React from "react";
 
 const SignMeetWorkplace = () => {
   return (
-    <div className="min-h-screen bg-gradient-to-b from-blue-500 to-blue-700 flex flex-col items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-blue-600 via-blue-500 to-blue-700 flex flex-col items-center justify-center p-4 bg-pattern">
       {/* Logo and Title Section */}
-      <div className="mb-16 text-center animate-fade-in">
-        <div className="flex items-center justify-center mb-4">
+      <div className="mb-20 text-center animate-fade-down">
+        <div className="flex items-center justify-center mb-6">
           <svg
             xmlns="http://www.w3.org/2000/svg"
             className="h-16 w-16 text-white mr-3 animate-bounce"
@@ -36,19 +36,22 @@ const SignMeetWorkplace = () => {
             />
           </svg>
         </div>
-        <h1 className="text-white text-4xl font-bold mb-2">SignMeet</h1>
-        <h2 className="text-white text-2xl font-light">
+        <h1 className="text-white text-5xl font-bold mb-3 tracking-tight">
+          SignMeet
+        </h1>
+        <h2 className="text-white/90 text-2xl font-light">
           Video Call & Sign Language Support
         </h2>
       </div>
 
       {/* Main Container */}
-      <div className="bg-white/95 backdrop-blur rounded-xl p-8 w-full max-w-md shadow-2xl animate-fade-in">
+      <div className="bg-white/80 backdrop-blur-lg rounded-2xl p-8 w-full max-w-md shadow-2xl animate-fade-up border border-white/20">
         {/* Join Meeting Button */}
         <Link href={"/meeting"}>
           <button
-            className="w-full bg-blue-600 text-white py-4 px-6 rounded-lg mb-4 
-                         hover:bg-blue-700 transition-all duration-200 font-medium flex items-center justify-center transform hover:scale-105"
+            className="w-full bg-blue-600 text-white py-4 px-6 rounded-lg mb-5 
+                         hover:bg-blue-700 transition-all duration-300 font-semibold flex items-center justify-center
+                         transform hover:scale-102 hover:shadow-lg active:scale-98"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -71,18 +74,20 @@ const SignMeetWorkplace = () => {
         {/* Sign Up Button */}
         <Link href={"/signup"}>
           <button
-            className="w-full bg-white text-blue-600 py-4 px-6 rounded-lg mb-3
-                         border-2 border-blue-600 hover:bg-blue-50 transition-all duration-200 font-medium transform hover:scale-105"
+            className="w-full bg-white text-blue-600 py-4 px-6 rounded-lg mb-4
+                         border-2 border-blue-600/20 hover:border-blue-600 hover:bg-blue-50 
+                         transition-all duration-300 font-semibold transform hover:scale-102 hover:shadow-md"
           >
             Sign up
           </button>
         </Link>
 
         {/* Sign In Button */}
-        <Link href={"/signin"}>
+        <Link href={"/signin"} prefetch>
           <button
-            className="w-full bg-gray-50 text-gray-700 py-4 px-6 rounded-lg
-                         hover:bg-gray-100 transition-all duration-200 font-medium transform hover:scale-105"
+            className="w-full bg-gray-100/80 text-gray-700 py-4 px-6 rounded-lg
+                         hover:bg-gray-200 transition-all duration-300 font-medium 
+                         transform hover:scale-102 hover:shadow-md"
           >
             Sign in
           </button>

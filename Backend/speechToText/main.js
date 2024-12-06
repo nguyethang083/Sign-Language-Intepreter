@@ -92,50 +92,59 @@ var run = function () { return __awaiter(void 0, void 0, void 0, function () {
                         }
                     });
                 });
-                transcriber.on("close", function () {
-                    console.log("AssemblyAI connection closed");
-                    isAssemblyAIReady = false;
-                });
+                // Handle reconnection logic
+                transcriber.on("close", function () { return __awaiter(void 0, void 0, void 0, function () {
+                    var error_2;
+                    return __generator(this, function (_a) {
+                        switch (_a.label) {
+                            case 0:
+                                console.log("AssemblyAI connection closed");
+                                isAssemblyAIReady = false;
+                                _a.label = 1;
+                            case 1:
+                                _a.trys.push([1, 3, , 4]);
+                                return [4 /*yield*/, transcriber.connect()];
+                            case 2:
+                                _a.sent();
+                                console.log("Reconnected to AssemblyAI");
+                                isAssemblyAIReady = true;
+                                return [3 /*break*/, 4];
+                            case 3:
+                                error_2 = _a.sent();
+                                console.error("Failed to reconnect to AssemblyAI:", error_2);
+                                return [3 /*break*/, 4];
+                            case 4: return [2 /*return*/];
+                        }
+                    });
+                }); });
                 // Thiết lập WebSocket server
                 wss.on("connection", function (ws) {
                     console.log("Client connected");
                     ws.on("message", function (message) { return __awaiter(void 0, void 0, void 0, function () {
-                        var error_2, arrayBuffer, float16Array, error_3;
+                        var arrayBuffer, float16Array, error_3;
                         return __generator(this, function (_a) {
                             switch (_a.label) {
                                 case 0:
-                                    if (!!isAssemblyAIReady) return [3 /*break*/, 5];
-                                    console.log("Waiting for AssemblyAI connection...");
+                                    if (!isAssemblyAIReady) {
+                                        console.log("Waiting for AssemblyAI connection...");
+                                        return [2 /*return*/];
+                                    }
                                     _a.label = 1;
                                 case 1:
                                     _a.trys.push([1, 3, , 4]);
-                                    // Thử kết nối lại nếu chưa sẵn sàng
-                                    return [4 /*yield*/, transcriber.connect()];
-                                case 2:
-                                    // Thử kết nối lại nếu chưa sẵn sàng
-                                    _a.sent();
-                                    console.log("Attempted to reconnect to AssemblyAI");
-                                    return [3 /*break*/, 4];
-                                case 3:
-                                    error_2 = _a.sent();
-                                    console.error("Failed to connect to AssemblyAI:", error_2);
-                                    return [2 /*return*/];
-                                case 4: return [2 /*return*/];
-                                case 5:
-                                    _a.trys.push([5, 7, , 8]);
                                     arrayBuffer = message instanceof Buffer
                                         ? message.buffer.slice(message.byteOffset, message.byteOffset + message.byteLength)
                                         : message;
                                     float16Array = new Int16Array(arrayBuffer);
                                     return [4 /*yield*/, transcriber.sendAudio(float16Array.buffer)];
-                                case 6:
+                                case 2:
                                     _a.sent();
-                                    return [3 /*break*/, 8];
-                                case 7:
+                                    return [3 /*break*/, 4];
+                                case 3:
                                     error_3 = _a.sent();
                                     console.error("Error sending audio:", error_3);
-                                    return [3 /*break*/, 8];
-                                case 8: return [2 /*return*/];
+                                    return [3 /*break*/, 4];
+                                case 4: return [2 /*return*/];
                             }
                         });
                     }); });

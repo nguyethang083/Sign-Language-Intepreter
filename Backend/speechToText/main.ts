@@ -63,9 +63,17 @@ const run = async () => {
     });
   });
 
-  transcriber.on("close", () => {
+  // Handle reconnection logic
+  transcriber.on("close", async () => {
     console.log("AssemblyAI connection closed");
     isAssemblyAIReady = false;
+    try {
+      await transcriber.connect();
+      console.log("Reconnected to AssemblyAI");
+      isAssemblyAIReady = true;
+    } catch (error) {
+      console.error("Failed to reconnect to AssemblyAI:", error);
+    }
   });
 
   // Thiết lập WebSocket server
@@ -75,14 +83,6 @@ const run = async () => {
     ws.on("message", async (message) => {
       if (!isAssemblyAIReady) {
         console.log("Waiting for AssemblyAI connection...");
-        try {
-          // Thử kết nối lại nếu chưa sẵn sàng
-          await transcriber.connect();
-          console.log("Attempted to reconnect to AssemblyAI");
-        } catch (error) {
-          console.error("Failed to connect to AssemblyAI:", error);
-          return;
-        }
         return;
       }
 

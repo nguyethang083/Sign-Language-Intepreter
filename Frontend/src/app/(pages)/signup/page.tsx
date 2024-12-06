@@ -3,10 +3,20 @@
 import AccountOptions from "@/app/component/signup-options/AccountOptions";
 import Link from "next/link";
 import React, { useState } from "react";
-
+import { handleSignUp } from "@/app/helpers/firebase/signup";
 const ZoomSignUp = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [agreeTerms, setAgreeTerms] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [username, setUsername] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleNavigation = () => {
+    setIsLoading(true);
+  };
 
   return (
     <div className="min-h-screen flex flex-col items-center py-8 px-4">
@@ -36,7 +46,7 @@ const ZoomSignUp = () => {
       </div>
 
       {/* Form Container */}
-      <div className="w-full max-w-md space-y-4">
+      <form className="w-full max-w-md space-y-4">
         {/* Name Inputs */}
         <div className="grid grid-cols-2 gap-4">
           <div className="relative">
@@ -44,6 +54,8 @@ const ZoomSignUp = () => {
               type="text"
               placeholder="First Name"
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none"
+              value={firstName}
+              onChange={(e) => setFirstName(e.target.value)}
             />
           </div>
           <div className="relative">
@@ -51,6 +63,8 @@ const ZoomSignUp = () => {
               type="text"
               placeholder="Last Name"
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none"
+              value={lastName}
+              onChange={(e) => setLastName(e.target.value)}
             />
           </div>
         </div>
@@ -61,14 +75,18 @@ const ZoomSignUp = () => {
             type="email"
             placeholder="Work Email"
             className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
           />
         </div>
         {/* Username Input */}
         <div className="relative">
           <input
-            type="email"
+            type="text"
             placeholder="Username"
             className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
           />
         </div>
 
@@ -78,6 +96,8 @@ const ZoomSignUp = () => {
             type={showPassword ? "text" : "password"}
             placeholder="Password (8 characters min.)"
             className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none pr-12"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
           />
           <button
             onClick={() => setShowPassword(!showPassword)}
@@ -149,15 +169,25 @@ const ZoomSignUp = () => {
 
         {/* Sign Up Button */}
         <button
-          className={`w-full py-3 rounded-lg font-medium transition-colors duration-200 
-            ${
-              agreeTerms
-                ? "bg-[#0b5cff] text-white hover:bg-blue-600"
-                : "bg-[#f3f3f4] text-gray-500 cursor-not-allowed"
-            }`}
-          disabled={!agreeTerms}
+          className="w-full py-3 bg-[#2D8CFF] text-white rounded-lg hover:bg-blue-600 transition-colors"
+          onClick={async (e) => {
+            setIsLoading(true);
+            const success = await handleSignUp(
+              e,
+              email,
+              password,
+              firstName,
+              lastName,
+              username
+            );
+            if (success) {
+              window.location.href = "/home";
+            }
+            setIsLoading(false);
+          }}
+          disabled={isLoading}
         >
-          Sign Up
+          {isLoading ? "Creating account..." : "Sign Up"}
         </button>
 
         {/* Or sign up with */}
@@ -172,34 +202,39 @@ const ZoomSignUp = () => {
 
         {/* Social Sign Up Options */}
         <AccountOptions />
-      </div>
+      </form>
 
       {/* Footer */}
       <div className="mt-auto w-full flex justify-between items-center px-4">
-        <Link href={"/"}>
-          <button className="flex items-center text-gray-600 hover:text-gray-800">
+        <div className="w-full bottom-0 left-0 right-0 p-4 flex justify-between bg-white">
+          <button
+            className="text-gray-600 hover:text-gray-900 flex items-center"
+            onClick={handleNavigation}
+            disabled={isLoading}
+          >
             <svg
-              xmlns="http://www.w3.org/2000/svg"
+              className="w-4 h-4 mr-1"
               fill="none"
-              viewBox="0 0 24 24"
-              strokeWidth={1.5}
               stroke="currentColor"
-              className="w-5 h-5 mr-1"
+              viewBox="0 0 24 24"
             >
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
-                d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18"
+                strokeWidth="2"
+                d="M15 19l-7-7 7-7"
               />
             </svg>
-            Back
+            <Link href={"/"}>{isLoading ? "Loading..." : "Back"}</Link>
           </button>
-        </Link>
-        <div className="text-gray-600">
-          Already have an account?
-          <button className="text-blue-500 hover:text-blue-600 ml-1">
-            Sign in
-          </button>
+          <Link href="/signin">
+            <button
+              className="text-blue-500 hover:text-blue-600"
+              disabled={isLoading}
+            >
+              Sign In
+            </button>
+          </Link>
         </div>
       </div>
     </div>

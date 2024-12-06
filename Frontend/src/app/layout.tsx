@@ -29,7 +29,6 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         {children}
-        <script src="./helpers/ConvertAudioToText.js"></script>
       </body>
     </html>
   );

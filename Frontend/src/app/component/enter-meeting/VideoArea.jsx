@@ -30,52 +30,86 @@ class VideoArea extends Component {
   }
 
   async componentDidMount() {
-    const { generateToken04 } = require("@/app/helpers/zegoServerAssistant");
-    const appID = 280263608;
-    const server = "1175c6e2e8bec41076e917a9a01a5627";
-    const userID = "user-" + Math.floor(Math.random() * 10000);
-    const roomID = "room-1";
-    const userName = "ducanh";
-    const effectiveTimeInSeconds = 3600;
-    const payload = "";
-    const token = await generateToken04(
-      appID,
-      userID,
-      server,
-      effectiveTimeInSeconds,
-      payload
-    );
+    try {
+      const { generateToken04 } = require("@/app/helpers/zegoServerAssistant");
+      const appID = 280263608;
+      const server = "1175c6e2e8bec41076e917a9a01a5627";
+      const userID = "user-" + Math.floor(Math.random() * 10000);
+      const roomID = "room-1";
+      const userName = "ducanh";
+      const effectiveTimeInSeconds = 3600;
+      const payload = "";
 
-    const zg = createZegoEngine(appID, server, {
-      logLevel: "disable",
-      remoteLogLevel: "disable",
-    });
-    this.setState({ zg }, async () => {
-      zg.on("roomStreamUpdate", this.handleStreamUpdate);
-      await loginToRoom(zg, roomID, token, userID, userName);
-      const localStream = await createStream(zg);
-      document.querySelector("#local-video").srcObject = localStream;
-      zg.startPublishingStream(`video_${userID}`, localStream);
-    });
+      const token = await generateToken04(
+        appID,
+        userID,
+        server,
+        effectiveTimeInSeconds,
+        payload
+      );
+
+      if (!token) {
+        throw new Error("Failed to generate token");
+      }
+
+      const zg = createZegoEngine(appID, server, {
+        logLevel: "disable",
+        remoteLogLevel: "disable",
+      });
+
+      if (!zg) {
+        throw new Error("Failed to create ZegoEngine instance");
+      }
+
+      this.setState({ zg }, async () => {
+        try {
+          zg.on("roomStreamUpdate", this.handleStreamUpdate);
+
+          const loginResult = await loginToRoom(
+            zg,
+            roomID,
+            token,
+            userID,
+            userName
+          );
+          if (!loginResult) {
+            throw new Error("Failed to login to room");
+          }
+
+          const localStream = await createStream(zg);
+          if (!localStream) {
+            throw new Error("Failed to create local stream");
+          }
+
+          const localVideo = document.querySelector("#local-video");
+          if (localVideo) {
+            localVideo.srcObject = localStream;
+            await zg.startPublishingStream(`video_${userID}`, localStream);
+          }
+        } catch (error) {
+          console.error("Error in ZegoEngine setup:", error);
+          alert("Failed to initialize video call. Please try again.");
+        }
+      });
+    } catch (error) {
+      console.error("Error in componentDidMount:", error);
+      alert(
+        "An error occurred while setting up the video call. Please try again."
+      );
+    }
   }
 
   updateSubtitle = (text, isFinal) => {
     if (isFinal) {
       this.setState((prevState) => {
-        const newSubtitle = prevState.subtitle + " " + text;
-        const sentences = newSubtitle.split(". ");
-        const finalSubtitle =
-          sentences.length > 2 ? sentences.slice(-2).join(". ") : newSubtitle;
+        const finalSubtitle = text;
 
         const translatedWords = finalSubtitle
           .toLowerCase()
           .split(" ")
           .map((word) => {
-            // Remove punctuation marks before looking up translation
             const cleanWord = word.replace(/[.,!?]$/, "");
-            // Get punctuation mark if it exists
             const punctuation = word.match(/[.,!?]$/)?.[0] || "";
-            // Get translation and add back punctuation
             return (translations[cleanWord] || cleanWord) + punctuation;
           });
 
@@ -120,7 +154,7 @@ class VideoArea extends Component {
 
           if (!this.processor) {
             this.processor = this.audioContext.createScriptProcessor(
-              16384,
+              4096,
               1,
               1
             );
@@ -170,19 +204,22 @@ class VideoArea extends Component {
             className={`absolute text-yellow-400 text-xl bottom-[15%] left-1/2 -translate-x-1/2 max-w-[80%] text-center bg-black/50 p-2.5 rounded-md `}
           >
             {translatedSubtitle}
-            <span className="text-yellow-400">
-              {this.props.selectedLanguage === "en" && "Translated Subtitle"}
-              {this.props.selectedLanguage === "vi" && "Phụ đề dịch"}
-              {this.props.selectedLanguage === "de" && "Untertitel übersetzen"}
-              {this.props.selectedLanguage === "fr" && "Sous-titre traduit"}
-              {this.props.selectedLanguage === "ja" && "翻訳字幕"}
-              {this.props.selectedLanguage === "ko" && "번역된 자막"}
-              {this.props.selectedLanguage === "zh" && "翻译字幕"}
-            </span>
+            {(translatedSubtitle === "" || translatedSubtitle === null) && (
+              <span className="text-yellow-400">
+                {this.props.selectedLanguage === "en" && "Translated Subtitle"}
+                {this.props.selectedLanguage === "vi" && "Phụ đề dịch"}
+                {this.props.selectedLanguage === "de" &&
+                  "Untertitel übersetzen"}
+                {this.props.selectedLanguage === "fr" && "Sous-titre traduit"}
+                {this.props.selectedLanguage === "ja" && "翻訳字幕"}
+                {this.props.selectedLanguage === "ko" && "번역된 자막"}
+                {this.props.selectedLanguage === "zh" && "翻译字幕"}
+              </span>
+            )}
           </div>
           <div
             id="subtitle"
-            className={`absolute text-white text-xl bottom-[10%] left-1/2 -translate-x-1/2 max-w-[80%] text-center bg-black/50 p-2.5 rounded-md mt-[4px] ${
+            className={`absolute text-white text-xl bottom-[10%] left-1/2 -translate-x-1/2 max-w-[80%] text-center bg-black/50 p-2.5 rounded-md mt-[8px] ${
               isSubtitle ? "block" : "hidden"
             }`}
           >
