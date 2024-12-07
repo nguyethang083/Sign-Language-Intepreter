@@ -2,21 +2,14 @@
 import React from "react";
 
 const RemoteVideoComponent = React.forwardRef((props, ref) => (
-  <div
-    className="participant-video"
-    style={{
-      width: "300px",
-      height: "200px",
-      margin: "10px",
-      backgroundColor: "#000",
-      borderRadius: "8px",
-      overflow: "hidden",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-    }}
-  >
-    <video id="remote-video" ref={ref} autoPlay playsInline></video>
+  <div className="remote-video-container w-full lg:w-[25%] aspect-video min-w-[200px] flex items-center justify-center">
+    <video
+      id="remote-video"
+      ref={ref}
+      className="w-full h-full object-cover rounded-lg"
+      autoPlay
+      playsInline
+    ></video>
   </div>
 ));
 

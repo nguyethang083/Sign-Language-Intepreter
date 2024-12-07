@@ -23,16 +23,36 @@ const ToolBar = ({
   ]);
   const [isTranslating, setIsTranslating] = useState(false);
   const [showLanguageMenu, setShowLanguageMenu] = useState(false);
+  const [showSignLanguageMenu, setShowSignLanguageMenu] = useState(false);
 
   const languages = [
+    { code: "ar", name: "العربية" },
+    { code: "cs", name: "Čeština" },
+    { code: "de", name: "Deutsch" },
     { code: "en", name: "English" },
-    { code: "vi", name: "Tiếng Việt" },
+    { code: "es", name: "Español" },
+    { code: "fr", name: "Français" },
+    { code: "hi", name: "हिन्दी" },
+    { code: "id", name: "Bahasa Indonesia" },
+    { code: "it", name: "Italiano" },
     { code: "ja", name: "日本語" },
     { code: "ko", name: "한국어" },
+    { code: "ms", name: "Bahasa Melayu" },
+    { code: "nl", name: "Nederlands" },
+    { code: "pl", name: "Polski" },
+    { code: "pt", name: "Português" },
+    { code: "ru", name: "Русский" },
+    { code: "th", name: "ไทย" },
+    { code: "tr", name: "Türkçe" },
+    { code: "vi", name: "Tiếng Việt" },
     { code: "zh", name: "中文" },
-    { code: "fr", name: "Français" },
-    { code: "de", name: "Deutsch" },
     { code: "off", name: "Turn off" },
+  ];
+
+  const signLanguageOptions = [
+    { code: "default", name: "Sign Language" },
+    { code: "en", name: "English" },
+    { code: "vi", name: "Tiếng Việt" },
   ];
 
   const handleLanguageSelect = (langCode) => {
@@ -136,13 +156,40 @@ const ToolBar = ({
             <div className="text-white">Subtitle</div>
           </button>
 
-          <button
-            onClick={() => setIsSignLanguage(!isSignLanguage)}
-            className="mx-2 px-4 py-2 hover:bg-gray-700 rounded-lg transition duration-200"
-          >
-            <div className="text-[20px]">{isSignLanguage ? "🤟" : "👋"}</div>
-            <div className="text-white">Sign language</div>
-          </button>
+          <div className="relative inline-block">
+            <button
+              onClick={() => setShowSignLanguageMenu(!showSignLanguageMenu)}
+              className="mx-2 px-4 py-2 hover:bg-gray-700 rounded-lg transition duration-200"
+            >
+              <div className="text-[20px]">🤟</div>
+              <div className="text-white">
+                {signLanguageOptions.find((opt) => opt.code === isSignLanguage)
+                  ?.name || "Turn off"}
+              </div>
+            </button>
+
+            {showSignLanguageMenu && (
+              <div className="absolute bottom-full mb-2 right-0 w-48 bg-gray-800 rounded-lg shadow-lg border border-gray-700 py-2">
+                {signLanguageOptions.map((option) => (
+                  <button
+                    key={option.code}
+                    onClick={() => {
+                      setIsSignLanguage(option.code);
+                      setShowSignLanguageMenu(false);
+                    }}
+                    className={`w-full px-4 py-2 text-left hover:bg-gray-700 transition-colors duration-200
+                      ${
+                        isSignLanguage === option.code
+                          ? "bg-gray-700 text-blue-400"
+                          : "text-white"
+                      }`}
+                  >
+                    {option.name}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
 
           <div className="relative inline-block">
             <button
@@ -154,7 +201,10 @@ const ToolBar = ({
             </button>
 
             {showLanguageMenu && (
-              <div className="absolute bottom-full mb-2 right-0 w-48 bg-gray-800 rounded-lg shadow-lg border border-gray-700 py-2">
+              <div
+                className="absolute bottom-full mb-2 right-0 w-48 bg-gray-800 rounded-lg shadow-lg border border-gray-700 py-2 max-h-[300px] overflow-y-auto
+                scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-gray-800"
+              >
                 {languages.map((lang) => (
                   <button
                     key={lang.code}

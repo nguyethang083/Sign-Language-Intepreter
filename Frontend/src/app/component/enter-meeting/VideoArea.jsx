@@ -171,22 +171,33 @@ class VideoArea extends Component {
     const { isSubtitle, isSignLanguage, selectedLanguage } = this.props;
 
     return (
-      <div className="flex-grow flex flex-col items-center justify-center relative">
-        <div className="flex flex-row justify-center items-center w-full">
-          <LocalVideoComponent />
-          <RemoteVideoComponent ref={this.remoteVideoRef} />
-        </div>
+      <>
+        <div className="flex-grow flex flex-col items-center justify-center relative p-4">
+          <div className="flex flex-col lg:flex-row gap-4 justify-center items-center w-full max-w-[1400px]">
+            <LocalVideoComponent />
+            <RemoteVideoComponent ref={this.remoteVideoRef} />
+          </div>
 
+          {isSignLanguage !== "default" && (
+            <img
+              src={`/quick_test.gif`}
+              alt="Sign language"
+              className="absolute bottom-0 right-[8%] w-[150px] h-[150px]"
+            />
+          )}
+        </div>
         <div>
           <div
             id="translated-subtitle"
-            className="absolute text-yellow-400 text-xl bottom-[16%] left-1/2 -translate-x-1/2 max-w-[80%] text-center bg-black/50 p-2.5 rounded-md"
+            className={`absolute text-yellow-400 text-lg bottom-[20%] left-1/2 -translate-x-1/2 max-w-[80%] text-center bg-black/50 p-2.5 rounded-md ${
+              selectedLanguage === "off" ? "hidden" : "block"
+            }`}
           >
             {translatedSubtitle || translations[`subtitle_${selectedLanguage}`]}
           </div>
           <div
             id="subtitle"
-            className={`absolute text-white text-xl bottom-[6%] left-1/2 -translate-x-1/2 max-w-[80%] text-center bg-black/50 p-2.5 rounded-md mt-[8px] ${
+            className={`absolute text-white text-lg bottom-[12%] left-1/2 -translate-x-1/2 max-w-[80%] text-center bg-black/50 p-2.5 rounded-md mt-[8px] ${
               isSubtitle ? "block" : "hidden"
             }`}
           >
@@ -194,15 +205,7 @@ class VideoArea extends Component {
             <span className="text-gray-300">{tempSubtitle}</span>
           </div>
         </div>
-
-        {isSignLanguage && (
-          <img
-            src="/quick_test.gif"
-            alt="Speech-to-Text Indicator"
-            className="absolute bottom-[2%] right-[8%] w-[150px] h-[150px]"
-          />
-        )}
-      </div>
+      </>
     );
   }
 }
