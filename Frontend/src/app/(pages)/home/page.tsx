@@ -43,8 +43,14 @@ const ZoomHome = () => {
           <div className="grid grid-cols-2 gap-x-16 gap-y-8 max-w-xl mx-auto">
             {/* New meeting */}
             <Link
-              href={"/meeting/enter-meeting"}
-              onClick={() => setIsLoading(true)}
+              href="/meeting/enter-meeting"
+              onClick={(e) => {
+                e.preventDefault();
+                setIsLoading(true);
+                setTimeout(() => {
+                  window.location.href = "/meeting/enter-meeting";
+                }, 500);
+              }}
             >
               <div className="flex flex-col items-center">
                 <button className="w-28 h-28 bg-[#F26D21] rounded-2xl flex items-center justify-center hover:bg-[#E65D15] transition-colors">

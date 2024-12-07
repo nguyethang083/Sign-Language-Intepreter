@@ -4,11 +4,7 @@ import {
   loginToRoom,
   createStream,
 } from "@/app/helpers/zegoEngineManager";
-
-import {
-  processAudioData,
-  initializeWebSocket,
-} from "@/app/helpers/audioProcessor";
+import { convertToBlob } from "@/../../Backend/speechToText-v2/js/index";
 import LocalVideoComponent from "@/app/component/videocall/LocalVideoComponent";
 import RemoteVideoComponent from "@/app/component/videocall/RemoteVideoComponent";
 import translations from "@/../public/translate/en-vi.json";
@@ -21,205 +17,176 @@ class VideoArea extends Component {
       subtitle: "",
       tempSubtitle: "",
       translatedSubtitle: "",
+      socket: null,
+      remoteStream: null,
     };
-    this.userID = "user-" + Math.floor(Math.random() * 10000);
+    this.USER_ID = "user-" + Math.floor(Math.random() * 10000);
+    this.ROOM_ID = "room-1";
+    this.APP_ID = 280263608;
+    this.SERVER = "1175c6e2e8bec41076e917a9a01a5627";
+
     this.remoteVideoRef = createRef();
     this.audioContext = null;
     this.processor = null;
-    this.updateSubtitle = this.updateSubtitle.bind(this);
   }
 
   async componentDidMount() {
     try {
       const { generateToken04 } = require("@/app/helpers/zegoServerAssistant");
-      const appID = 280263608;
-      const server = "1175c6e2e8bec41076e917a9a01a5627";
-      const userID = "user-" + Math.floor(Math.random() * 10000);
-      const roomID = "room-1";
+      const userID = this.USER_ID;
+      const roomID = this.ROOM_ID;
       const userName = "ducanh";
-      const effectiveTimeInSeconds = 3600;
-      const payload = "";
 
       const token = await generateToken04(
-        appID,
+        this.APP_ID,
         userID,
-        server,
-        effectiveTimeInSeconds,
-        payload
+        this.SERVER,
+        3600,
+        ""
       );
+      if (!token) throw new Error("Failed to generate token");
 
-      if (!token) {
-        throw new Error("Failed to generate token");
-      }
-
-      const zg = createZegoEngine(appID, server, {
+      const zg = createZegoEngine(this.APP_ID, this.SERVER, {
         logLevel: "disable",
         remoteLogLevel: "disable",
       });
-
-      if (!zg) {
-        throw new Error("Failed to create ZegoEngine instance");
-      }
+      if (!zg) throw new Error("Failed to create ZegoEngine instance");
 
       this.setState({ zg }, async () => {
-        try {
-          zg.on("roomStreamUpdate", this.handleStreamUpdate);
-
-          const loginResult = await loginToRoom(
-            zg,
-            roomID,
-            token,
-            userID,
-            userName
-          );
-          if (!loginResult) {
-            throw new Error("Failed to login to room");
-          }
-
-          const localStream = await createStream(zg);
-          if (!localStream) {
-            throw new Error("Failed to create local stream");
-          }
-
-          const localVideo = document.querySelector("#local-video");
-          if (localVideo) {
-            localVideo.srcObject = localStream;
-            await zg.startPublishingStream(`video_${userID}`, localStream);
-          }
-        } catch (error) {
-          console.error("Error in ZegoEngine setup:", error);
-          alert("Failed to initialize video call. Please try again.");
+        zg.on("roomStreamUpdate", this.handleStreamUpdate);
+        await loginToRoom(zg, this.ROOM_ID, token, this.USER_ID, "ducanh");
+        const localStream = await createStream(zg);
+        const localVideo = document.querySelector("#local-video");
+        if (localVideo) {
+          localVideo.srcObject = localStream;
+          await zg.startPublishingStream(`video_${this.USER_ID}`, localStream);
         }
       });
     } catch (error) {
       console.error("Error in componentDidMount:", error);
-      alert(
-        "An error occurred while setting up the video call. Please try again."
-      );
     }
   }
 
-  updateSubtitle = (text, isFinal) => {
-    if (isFinal) {
-      this.setState((prevState) => {
-        const finalSubtitle = text;
+  async initializeWebSocket() {
+    try {
+      const url =
+        process.env.NODE_ENV === "development"
+          ? "http://localhost:8000/"
+          : "https://broken-smoke-9608.fly.dev/";
 
-        const translatedWords = finalSubtitle
-          .toLowerCase()
-          .split(" ")
-          .map((word) => {
-            const cleanWord = word.replace(/[.,!?]$/, "");
-            const punctuation = word.match(/[.,!?]$/)?.[0] || "";
-            return (translations[cleanWord] || cleanWord) + punctuation;
+      const { token } = await fetch(url).then((res) => res.json());
+
+      const socket = new WebSocket(
+        `wss://api.assemblyai.com/v2/realtime/ws?sample_rate=16000&token=${token}`
+      );
+
+      socket.onmessage = (message) => {
+        const res = JSON.parse(message.data);
+        const text = res.text || "";
+        const isFinal = res.message_type === "FinalTranscript";
+
+        if (isFinal) {
+          const translatedWords = text
+            .toLowerCase()
+            .split(" ")
+            .map((word) => {
+              const cleanWord = word.replace(/[.,!?]$/, "");
+              const punctuation = word.match(/[.,!?]$/)?.[0] || "";
+              return (translations[cleanWord] || cleanWord) + punctuation;
+            });
+
+          this.setState({
+            subtitle: text,
+            translatedSubtitle: translatedWords.join(" "),
+            tempSubtitle: "",
           });
+        } else {
+          this.setState({ tempSubtitle: text });
+        }
+      };
 
-        return {
-          subtitle: finalSubtitle,
-          translatedSubtitle: translatedWords.join(" "),
-          tempSubtitle: "",
-        };
-      });
-    } else {
-      this.setState({ tempSubtitle: text });
+      socket.onerror = () => socket.close();
+      socket.onclose = () => this.setState({ socket: null });
+      this.setState({ socket });
+    } catch (error) {
+      console.error("Error initializing WebSocket:", error);
     }
-  };
+  }
 
   handleStreamUpdate = async (roomID, updateType, streamList) => {
     if (
-      updateType === "ADD" &&
-      streamList.length > 0 &&
-      this.remoteVideoRef.current
-    ) {
-      const remoteStreamInfo = streamList[streamList.length - 1];
+      updateType !== "ADD" ||
+      !streamList.length ||
+      !this.remoteVideoRef.current
+    )
+      return;
 
-      if (!remoteStreamInfo.streamID.includes(this.userID)) {
-        const remoteStream = await this.state.zg.startPlayingStream(
-          remoteStreamInfo.streamID
-        );
-        this.remoteVideoRef.current.srcObject = remoteStream;
-        this.remoteVideoRef.current.muted = false;
+    const remoteStreamInfo = streamList[streamList.length - 1];
+    if (remoteStreamInfo.streamID.includes(this.USER_ID)) return;
 
-        try {
-          await initializeWebSocket(this.updateSubtitle);
+    try {
+      const remoteStream = await this.state.zg.startPlayingStream(
+        remoteStreamInfo.streamID
+      );
+      this.remoteVideoRef.current.srcObject = remoteStream;
+      this.setState({ remoteStream });
 
-          if (!this.audioContext) {
-            this.audioContext = new (window.AudioContext ||
-              window.webkitAudioContext)({
-              sampleRate: 16000,
-            });
-          }
-
-          const source =
-            this.audioContext.createMediaStreamSource(remoteStream);
-
-          if (!this.processor) {
-            this.processor = this.audioContext.createScriptProcessor(
-              4096,
-              1,
-              1
-            );
-            this.processor.onaudioprocess = async (event) => {
-              try {
-                await processAudioData(event.inputBuffer.getChannelData(0));
-              } catch (error) {
-                console.error("Error processing audio:", error);
-              }
-            };
-          }
-
-          source.connect(this.processor);
-          this.processor.connect(this.audioContext.destination);
-        } catch (error) {
-          console.error("Error initializing WebSocket:", error);
-        }
-      }
+      await this.initializeWebSocket();
+      await this.setupAudioProcessing(remoteStream);
+    } catch (error) {
+      console.error("Error in handleStreamUpdate:", error);
     }
   };
 
+  setupAudioProcessing = async (remoteStream) => {
+    this.audioContext = new (window.AudioContext || window.webkitAudioContext)({
+      sampleRate: 16000,
+    });
+    const source = this.audioContext.createMediaStreamSource(remoteStream);
+    this.processor = this.audioContext.createScriptProcessor(4096, 1, 1);
+
+    source.connect(this.processor);
+    this.processor.connect(this.audioContext.destination);
+
+    this.processor.onaudioprocess = (e) => {
+      if (this.state.socket?.readyState !== WebSocket.OPEN) return;
+
+      const reader = new FileReader();
+      reader.onload = () => {
+        const base64data = reader.result.split("base64,")[1];
+        this.state.socket.send(JSON.stringify({ audio_data: base64data }));
+      };
+      reader.readAsDataURL(convertToBlob(e.inputBuffer.getChannelData(0)));
+    };
+  };
+
   componentWillUnmount() {
-    if (this.processor) {
-      this.processor.disconnect();
-    }
-    if (this.audioContext) {
-      this.audioContext.close();
-    }
+    this.state.socket?.close();
+    this.processor?.disconnect();
+    this.audioContext?.close();
   }
 
   render() {
     const { subtitle, tempSubtitle, translatedSubtitle } = this.state;
-    const { isSubtitle, isSignLanguage } = this.props;
+    const { isSubtitle, isSignLanguage, selectedLanguage } = this.props;
 
     return (
       <div className="flex-grow flex flex-col items-center justify-center relative">
         <div className="flex flex-row justify-center items-center w-full">
           <LocalVideoComponent />
-          <div className="participant-videos flex flex-wrap justify-center mt-4">
-            <RemoteVideoComponent ref={this.remoteVideoRef} />
-          </div>
+          <RemoteVideoComponent ref={this.remoteVideoRef} />
         </div>
 
         <div>
           <div
             id="translated-subtitle"
-            className={`absolute text-yellow-400 text-xl bottom-[15%] left-1/2 -translate-x-1/2 max-w-[80%] text-center bg-black/50 p-2.5 rounded-md `}
+            className="absolute text-yellow-400 text-xl bottom-[16%] left-1/2 -translate-x-1/2 max-w-[80%] text-center bg-black/50 p-2.5 rounded-md"
           >
-            {translatedSubtitle}
-            {(translatedSubtitle === "" || translatedSubtitle === null) && (
-              <span className="text-yellow-400">
-                {this.props.selectedLanguage === "en" && "Translated Subtitle"}
-                {this.props.selectedLanguage === "vi" && "Phụ đề dịch"}
-                {this.props.selectedLanguage === "de" &&
-                  "Untertitel übersetzen"}
-                {this.props.selectedLanguage === "fr" && "Sous-titre traduit"}
-                {this.props.selectedLanguage === "ja" && "翻訳字幕"}
-                {this.props.selectedLanguage === "ko" && "번역된 자막"}
-                {this.props.selectedLanguage === "zh" && "翻译字幕"}
-              </span>
-            )}
+            {translatedSubtitle || translations[`subtitle_${selectedLanguage}`]}
           </div>
           <div
             id="subtitle"
-            className={`absolute text-white text-xl bottom-[10%] left-1/2 -translate-x-1/2 max-w-[80%] text-center bg-black/50 p-2.5 rounded-md mt-[8px] ${
+            className={`absolute text-white text-xl bottom-[6%] left-1/2 -translate-x-1/2 max-w-[80%] text-center bg-black/50 p-2.5 rounded-md mt-[8px] ${
               isSubtitle ? "block" : "hidden"
             }`}
           >
