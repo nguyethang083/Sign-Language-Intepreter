@@ -50,7 +50,7 @@ const ToolBar = ({
   ];
 
   const signLanguageOptions = [
-    { code: "default", name: "Sign Language" },
+    { code: "default", name: "Turn off" },
     { code: "en", name: "English" },
     { code: "vi", name: "Tiếng Việt" },
   ];
@@ -164,7 +164,7 @@ const ToolBar = ({
               <div className="text-[20px]">🤟</div>
               <div className="text-white">
                 {signLanguageOptions.find((opt) => opt.code === isSignLanguage)
-                  ?.name || "Turn off"}
+                  ?.name || "Sign language"}
               </div>
             </button>
 

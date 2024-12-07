@@ -178,7 +178,7 @@ class VideoArea extends Component {
             <RemoteVideoComponent ref={this.remoteVideoRef} />
           </div>
 
-          {isSignLanguage !== "default" && (
+          {isSignLanguage !== "default" && isSignLanguage && (
             <img
               src={`/quick_test.gif`}
               alt="Sign language"
