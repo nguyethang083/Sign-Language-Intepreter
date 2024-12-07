@@ -7,7 +7,8 @@ import {
 import { convertToBlob } from "@/../../Backend/speechToText-v2/js/index";
 import LocalVideoComponent from "@/app/component/videocall/LocalVideoComponent";
 import RemoteVideoComponent from "@/app/component/videocall/RemoteVideoComponent";
-import translations from "@/../public/translate/en-vi.json";
+import translationsVi from "@/../public/translate/en-vi.json";
+import translationsGe from "@/../public/translate/en-ge.json";
 
 class VideoArea extends Component {
   constructor(props) {
@@ -86,6 +87,10 @@ class VideoArea extends Component {
         const isFinal = res.message_type === "FinalTranscript";
 
         if (isFinal) {
+          const translations =
+            this.props.selectedLanguage === "de"
+              ? translationsGe
+              : translationsVi;
           const translatedWords = text
             .toLowerCase()
             .split(" ")
@@ -193,7 +198,8 @@ class VideoArea extends Component {
               selectedLanguage === "off" ? "hidden" : "block"
             }`}
           >
-            {translatedSubtitle || translations[`subtitle_${selectedLanguage}`]}
+            {translatedSubtitle ||
+              translationsVi[`subtitle_${selectedLanguage}`]}
           </div>
           <div
             id="subtitle"
