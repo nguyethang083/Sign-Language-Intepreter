@@ -103,6 +103,20 @@ const MeetingSummary = () => {
   const router = useRouter();
   const [loading, setLoading] = React.useState(true);
   const [language, setLanguage] = React.useState<"vi" | "en">("vi");
+  const [contentLoading, setContentLoading] = React.useState(false);
+
+  const handleLanguageChange = (newLanguage: "vi" | "en") => {
+    setContentLoading(true);
+    setLanguage(newLanguage);
+    setTimeout(() => {
+      setContentLoading(false);
+    }, 800);
+  };
+
+  const LanguageSelectorProps = {
+    language,
+    setLanguage: handleLanguageChange,
+  };
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -116,7 +130,7 @@ const MeetingSummary = () => {
     vi: {
       quickRecap: {
         title: "Tổng quan nhanh",
-        text: "Đức Anh đã giới thiệu ứng dụng video call với các tính năng như microphone, video, chia sẻ màn hình và thảo luận trực tuyến. Điểm nổi bật là tính năng hiển thị hình nhân mô phỏng ngôn ngữ ký hiệu dựa trên lời nói, được thiết kế để hỗ trợ người khiếm thính. Trong phần demo cùng Phương Anh, họ đã trình bày khả năng tự động chuyển lời nói thành phụ đề và dịch đa ngôn ngữ của ứng dụng.",
+        text: "SignMeet là ứng dụng hỗ trợ phụ đề thời gian thực và dịch đa ngôn ngữ, giúp giao tiếp trở nên dễ dàng cho mọi người. Tính năng nổi bật nhất là khả năng hỗ trợ người khiếm thính bằng cách chuyển đổi giọng nói thành ngôn ngữ ký hiệu. Trong buổi demo, Lam và Duc Anh đã thực hiện một cuộc hội thoại ngắn bằng tiếng Anh, cho thấy khả năng chuyển đổi thành công sang ngôn ngữ ký hiệu Mỹ (ASL).",
       },
       nextSteps: {
         title: "Các bước tiếp theo",
@@ -131,24 +145,24 @@ const MeetingSummary = () => {
         title: "Tóm tắt",
         sections: {
           mainFeatures: {
-            title: "Giới thiệu tính năng chính",
+            title: "Tính năng chính",
             content:
-              "Ứng dụng tích hợp các tính năng video call cơ bản cùng với khả năng mô phỏng ngôn ngữ ký hiệu độc đáo.",
+              "Ứng dụng cung cấp phụ đề thời gian thực và hỗ trợ đa ngôn ngữ, bao gồm tiếng Việt, tiếng Đức và nhiều ngôn ngữ khác.",
           },
           demoFeatures: {
             title: "Demo tính năng",
             content:
-              "Trình diễn thành công việc chuyển đổi giọng nói thành phụ đề và dịch thuật đa ngôn ngữ.",
+              "Trình diễn thành công việc chuyển đổi cuộc hội thoại tiếng Anh sang ngôn ngữ ký hiệu ASL trong thời gian thực.",
           },
           technicalDetails: {
             title: "Chi tiết kỹ thuật",
             content:
-              "Sử dụng công nghệ WebRTC cho video call, AI cho xử lý ngôn ngữ và animation 3D cho mô phỏng ký hiệu.",
+              "Tích hợp công nghệ chuyển đổi giọng nói thành ngôn ngữ ký hiệu và hệ thống phụ đề đa ngôn ngữ thời gian thực.",
           },
           conclusion: {
             title: "Kết luận",
             content:
-              "Ứng dụng thể hiện tiềm năng lớn trong việc hỗ trợ giao tiếp cho người khiếm thính.",
+              "SignMeet thể hiện khả năng vượt trội trong việc hỗ trợ giao tiếp cho người khiếm thính và phá vỡ rào cản ngôn ngữ.",
           },
         },
       },
@@ -156,39 +170,39 @@ const MeetingSummary = () => {
     en: {
       quickRecap: {
         title: "Quick Recap",
-        text: "Duc Anh introduced the video call application with features such as microphone, video, screen sharing, and online discussion. The highlight is the sign language simulation feature, designed to support people with hearing impairments. During the demo with Phương Anh, they demonstrated the ability to automatically translate speech into subtitles and translate multiple languages. The application is very useful for situations with the participation of hearing-impaired people or those from different countries, helping to break down language barriers.",
+        text: "SignMeet is an application that supports real-time subtitles and multi-language translation, making communication seamless for everyone. The most outstanding feature is its ability to support deaf people by translating voice into sign language. During the demo, Thanh and Duc Anh conducted a short conversation in English, demonstrating successful conversion to American Sign Language (ASL).",
       },
       nextSteps: {
         title: "Next Steps",
         items: [
-          "Continue developing and improving sign language simulation features",
-          "Optimize the delay of the subtitle system and translation under 300ms",
-          "Expand support for more languages and different dialects",
-          "Conduct testing with the hearing-impaired community to receive feedback",
+          "Continue developing and refining sign language simulation features",
+          "Optimize subtitle and translation system latency to under 300ms",
+          "Expand support for additional languages and sign language dialects",
+          "Conduct testing with the deaf community for feedback",
         ],
       },
       summary: {
         title: "Summary",
         sections: {
           mainFeatures: {
-            title: "Main Features Introduction",
+            title: "Main Features",
             content:
-              "Application integrates basic video call features along with unique sign language simulation capabilities.",
+              "Application provides real-time subtitles and multi-language support, including Vietnamese, German, and many other languages.",
           },
           demoFeatures: {
             title: "Demo Features",
             content:
-              "Successfully demonstrated speech-to-subtitle conversion and multilingual translation.",
+              "Successfully demonstrated real-time conversion of English conversation to ASL sign language.",
           },
           technicalDetails: {
             title: "Technical Details",
             content:
-              "Utilizes WebRTC for video calls, AI for language processing, and 3D animation for sign language simulation.",
+              "Integrates voice-to-sign-language conversion technology and real-time multilingual subtitle system.",
           },
           conclusion: {
             title: "Conclusion",
             content:
-              "Application shows great potential in supporting communication for the hearing impaired.",
+              "SignMeet demonstrates exceptional capability in supporting communication for the deaf and breaking down language barriers.",
           },
         },
       },
@@ -209,7 +223,7 @@ const MeetingSummary = () => {
             }`}
           />
           <div className="absolute top-4 right-4">
-            <LanguageSelector language={language} setLanguage={setLanguage} />
+            <LanguageSelector {...LanguageSelectorProps} />
           </div>
 
           {loading ? (
@@ -257,7 +271,7 @@ const MeetingSummary = () => {
 
         {/* Quick Recap */}
         <div className="p-4 sm:p-6 border-b border-gray-300">
-          {loading ? (
+          {loading || contentLoading ? (
             <>
               <Skeleton
                 variant="rectangular"
@@ -300,8 +314,8 @@ const MeetingSummary = () => {
         </div>
 
         {/* Next Steps */}
-        <div className="p-4 sm:p-6 border-b border-gray-300">
-          {loading ? (
+        {/* <div className="p-4 sm:p-6 border-b border-gray-300">
+          {loading || contentLoading ? (
             <>
               <Skeleton
                 variant="rectangular"
@@ -343,11 +357,11 @@ const MeetingSummary = () => {
               </ul>
             </>
           )}
-        </div>
+        </div> */}
 
         {/* Summary */}
         <div className="p-4 sm:p-6">
-          {loading ? (
+          {loading || contentLoading ? (
             <>
               <Skeleton
                 variant="rectangular"

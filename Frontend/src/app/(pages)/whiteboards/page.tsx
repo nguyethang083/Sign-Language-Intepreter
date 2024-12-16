@@ -18,7 +18,7 @@ const ZoomHome = () => {
       {/* Existing content */}
       <div className="flex flex-1 justify-between">
         <iframe
-          src="https://onlineboard.eu/b/pI3EbRZv"
+          src="https://onlineboard.eu/b/RXjMlmtO"
           width="1000"
           height="600"
           frameBorder={0}

@@ -18,12 +18,13 @@ const ToolBar = ({
   const router = useRouter();
 
   const [participants, setParticipants] = useState([
-    { name: "Phung Duc Anh", isHost: true },
+    { name: "Phùng Đức Anh", isHost: true },
     { name: "Nguyen Phuong Anh", isHost: false },
   ]);
   const [isTranslating, setIsTranslating] = useState(false);
   const [showLanguageMenu, setShowLanguageMenu] = useState(false);
   const [showSignLanguageMenu, setShowSignLanguageMenu] = useState(false);
+  const [showSubtitleMenu, setShowSubtitleMenu] = useState(false);
 
   const languages = [
     { code: "ar", name: "العربية" },
@@ -53,6 +54,29 @@ const ToolBar = ({
     { code: "default", name: "Turn off" },
     { code: "en", name: "English" },
     { code: "vi", name: "Tiếng Việt" },
+  ];
+
+  const subtitleOptions = [
+    { code: "ar", name: "العربية" },
+    { code: "cs", name: "Čeština" },
+    { code: "de", name: "Deutsch" },
+    { code: "en", name: "English" },
+    { code: "es", name: "Español" },
+    { code: "fr", name: "Français" },
+    { code: "hi", name: "हिन्दी" },
+    { code: "id", name: "Bahasa Indonesia" },
+    { code: "it", name: "Italiano" },
+    { code: "ja", name: "日本語" },
+    { code: "ko", name: "한국어" },
+    { code: "ms", name: "Bahasa Melayu" },
+    { code: "nl", name: "Nederlands" },
+    { code: "pl", name: "Polski" },
+    { code: "pt", name: "Português" },
+    { code: "ru", name: "Русский" },
+    { code: "th", name: "ไทย" },
+    { code: "tr", name: "Türkçe" },
+    { code: "off", name: "Turn off" },
+    { code: "offline", name: "Tiếng Việt" },
   ];
 
   const handleLanguageSelect = (langCode) => {
@@ -148,13 +172,43 @@ const ToolBar = ({
             <div className="text-[20px]">🎥</div>
             <div className="text-white">Share</div>
           </button>
-          <button
-            onClick={() => setIsSubtitle(!isSubtitle)}
-            className="mx-2 px-4 py-2 hover:bg-gray-700 rounded-lg transition duration-200"
-          >
-            <div className="text-[20px]">{isSubtitle ? "📤" : "📥"}</div>
-            <div className="text-white">Subtitle</div>
-          </button>
+          <div className="relative inline-block">
+            <button
+              onClick={() => setShowSubtitleMenu(!showSubtitleMenu)}
+              className="mx-2 px-4 py-2 hover:bg-gray-700 rounded-lg transition duration-200"
+            >
+              <div className="text-[20px]">{isSubtitle ? "📤" : "📥"}</div>
+              <div className="text-white">
+                {subtitleOptions.find((opt) => opt.code === isSubtitle)?.name ||
+                  "Subtitle"}
+              </div>
+            </button>
+
+            {showSubtitleMenu && (
+              <div
+                className="absolute bottom-full mb-2 right-0 w-48 bg-gray-800 rounded-lg shadow-lg border border-gray-700 py-2 max-h-[300px] overflow-y-auto
+                scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-gray-800"
+              >
+                {subtitleOptions.map((option) => (
+                  <button
+                    key={option.code}
+                    onClick={() => {
+                      setIsSubtitle(option.code);
+                      setShowSubtitleMenu(false);
+                    }}
+                    className={`w-full px-4 py-2 text-left hover:bg-gray-700 transition-colors duration-200
+                      ${
+                        isSubtitle === option.code
+                          ? "bg-gray-700 text-blue-400"
+                          : "text-white"
+                      }`}
+                  >
+                    {option.name}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
 
           <div className="relative inline-block">
             <button

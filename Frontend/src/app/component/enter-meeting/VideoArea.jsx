@@ -20,6 +20,8 @@ class VideoArea extends Component {
       translatedSubtitle: "",
       socket: null,
       remoteStream: null,
+      remoteUserId: null,
+      currentGifIndex: 1,
     };
     this.USER_ID = "user-" + Math.floor(Math.random() * 10000);
     this.ROOM_ID = "room-1";
@@ -100,9 +102,10 @@ class VideoArea extends Component {
               return (translations[cleanWord] || cleanWord) + punctuation;
             });
 
+          const speakerId = this.state.remoteUserId || "Unknown User";
           this.setState({
-            subtitle: text,
-            translatedSubtitle: translatedWords.join(" "),
+            subtitle: `${speakerId}: ${text}`,
+            translatedSubtitle: `${speakerId}: ${translatedWords.join(" ")}`,
             tempSubtitle: "",
           });
         } else {
@@ -127,6 +130,7 @@ class VideoArea extends Component {
       return;
 
     const remoteStreamInfo = streamList[streamList.length - 1];
+    const remoteUserId = remoteStreamInfo.streamID.split("_")[1];
     if (remoteStreamInfo.streamID.includes(this.USER_ID)) return;
 
     try {
@@ -134,7 +138,7 @@ class VideoArea extends Component {
         remoteStreamInfo.streamID
       );
       this.remoteVideoRef.current.srcObject = remoteStream;
-      this.setState({ remoteStream });
+      this.setState({ remoteStream, remoteUserId });
 
       await this.initializeWebSocket();
       await this.setupAudioProcessing(remoteStream);
@@ -165,10 +169,43 @@ class VideoArea extends Component {
     };
   };
 
+  componentDidUpdate(prevProps) {
+    if (
+      prevProps.isSignLanguage !== this.props.isSignLanguage &&
+      this.props.isSignLanguage
+    ) {
+      this.startGifRotation();
+    }
+  }
+
+  startGifRotation = () => {
+    this.setState({ currentGifIndex: "0_" });
+
+    const loadNextGif = () => {
+      const img = new Image();
+      const suffix = this.props.selectedLanguage === "vi" ? "_vi" : "";
+
+      setTimeout(() => {
+        img.onload = () => {
+          setTimeout(() => {
+            this.setState({ currentGifIndex: `nearlast${suffix}` });
+          }, 2000);
+        };
+
+        img.src = `/gif/${this.state.currentGifIndex}.gif`;
+      }, 3000);
+    };
+
+    loadNextGif();
+  };
+
   componentWillUnmount() {
     this.state.socket?.close();
     this.processor?.disconnect();
     this.audioContext?.close();
+    if (this.timeoutId) {
+      clearTimeout(this.timeoutId);
+    }
   }
 
   render() {
@@ -183,13 +220,13 @@ class VideoArea extends Component {
             <RemoteVideoComponent ref={this.remoteVideoRef} />
           </div>
 
-          {isSignLanguage !== "default" && isSignLanguage && (
+          {/* {isSignLanguage !== "default" && isSignLanguage && (
             <img
-              src={`/quick_test.gif`}
+              src={`/gif/${this.state.currentGifIndex}.gif`}
               alt="Sign language"
               className="absolute bottom-0 right-[8%] w-[150px] h-[150px]"
             />
-          )}
+          )} */}
         </div>
         <div>
           <div
@@ -204,7 +241,9 @@ class VideoArea extends Component {
           <div
             id="subtitle"
             className={`absolute text-white text-lg bottom-[12%] left-1/2 -translate-x-1/2 max-w-[80%] text-center bg-black/50 p-2.5 rounded-md mt-[8px] ${
-              isSubtitle ? "block" : "hidden"
+              isSubtitle !== "off" && isSubtitle !== "offline"
+                ? "block"
+                : "hidden"
             }`}
           >
             {subtitle}

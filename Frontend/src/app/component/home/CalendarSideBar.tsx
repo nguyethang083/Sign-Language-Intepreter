@@ -1,4 +1,35 @@
+import { useState } from "react";
+
 const CalendarSideBar = () => {
+  const [showScheduleForm, setShowScheduleForm] = useState(false);
+  const [formData, setFormData] = useState({
+    title: "",
+    date: "",
+    startTime: "",
+    endTime: "",
+    description: "",
+  });
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      // Gửi dữ liệu đến API của bạn
+      await fetch("/api/meetings", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(formData),
+      });
+
+      // Đóng form và refresh trang
+      setShowScheduleForm(false);
+      window.location.reload();
+    } catch (error) {
+      console.error("Error scheduling meeting:", error);
+    }
+  };
+
   return (
     <>
       <div className="w-80 border-l border-gray-200 bg-white shadow-lg flex flex-col justify-between">
@@ -134,7 +165,10 @@ const CalendarSideBar = () => {
                 <br />
                 Enjoy your day!
               </p>
-              <button className="mt-4 text-blue-500 hover:underline flex items-center">
+              <button
+                className="mt-4 text-blue-500 hover:underline flex items-center"
+                onClick={() => setShowScheduleForm(true)}
+              >
                 <svg
                   className="w-4 h-4 mr-1"
                   fill="none"
@@ -174,6 +208,99 @@ const CalendarSideBar = () => {
           </button>
         </div>
       </div>
+
+      {/* Thêm Modal Form */}
+      {showScheduleForm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+          <div className="bg-white p-6 rounded-lg w-96">
+            <h2 className="text-xl font-bold mb-4">Schedule a Meeting</h2>
+            <form onSubmit={handleSubmit}>
+              <div className="mb-4">
+                <label className="block text-gray-700 text-sm font-bold mb-2">
+                  Title
+                  <input
+                    type="text"
+                    className="w-full mt-1 p-2 border rounded"
+                    value={formData.title}
+                    onChange={(e) =>
+                      setFormData({ ...formData, title: e.target.value })
+                    }
+                    required
+                  />
+                </label>
+              </div>
+              <div className="mb-4">
+                <label className="block text-gray-700 text-sm font-bold mb-2">
+                  Date
+                  <input
+                    type="date"
+                    className="w-full mt-1 p-2 border rounded"
+                    value={formData.date}
+                    onChange={(e) =>
+                      setFormData({ ...formData, date: e.target.value })
+                    }
+                    required
+                  />
+                </label>
+              </div>
+              <div className="grid grid-cols-2 gap-4 mb-4">
+                <label className="block text-gray-700 text-sm font-bold">
+                  Start Time
+                  <input
+                    type="time"
+                    className="w-full mt-1 p-2 border rounded"
+                    value={formData.startTime}
+                    onChange={(e) =>
+                      setFormData({ ...formData, startTime: e.target.value })
+                    }
+                    required
+                  />
+                </label>
+                <label className="block text-gray-700 text-sm font-bold">
+                  End Time
+                  <input
+                    type="time"
+                    className="w-full mt-1 p-2 border rounded"
+                    value={formData.endTime}
+                    onChange={(e) =>
+                      setFormData({ ...formData, endTime: e.target.value })
+                    }
+                    required
+                  />
+                </label>
+              </div>
+              <div className="mb-4">
+                <label className="block text-gray-700 text-sm font-bold mb-2">
+                  Description
+                  <textarea
+                    className="w-full mt-1 p-2 border rounded"
+                    value={formData.description}
+                    onChange={(e) =>
+                      setFormData({ ...formData, description: e.target.value })
+                    }
+                    rows={3}
+                  />
+                </label>
+              </div>
+              <div className="flex justify-end space-x-2">
+                <button
+                  type="button"
+                  className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded"
+                  onClick={() => setShowScheduleForm(false)}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+                >
+                  Schedule
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </>
   );
 };
